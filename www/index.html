@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Tic‑Tac Rush – Mobile</title>
+  <title>Tic-Tac Rush – Mobile</title>
 
 <style>
   :root{
@@ -11,13 +11,13 @@
     --void:#1f2937; --accent:#8b9dff; --accent2:#ffb86b; --good:#35d49a; --bad:#ff6b6b;
   }
   *{box-sizing:border-box}
+  
   body {
     margin: 0;
     height: 100dvh;
     display: grid;
-    place-items: center;
+    place-items: start center;
     overflow: hidden;
-    /* 💥 odstraněn tmavý přechod – láva plně viditelná */
     background: url("lava.webp") center/cover no-repeat;
     color: var(--text);
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
@@ -28,7 +28,7 @@
     gap: 10px;
     align-items: center;
     justify-items: center;
-    margin-top: 8vh;
+    margin-top: 16vh;
   }
 
   #hud {
@@ -59,12 +59,11 @@
   grid-template-columns: repeat(var(--size, 11), 1fr);
   grid-template-rows: repeat(var(--size, 11), 1fr);
   gap: 2px;
-  background: transparent; /* 💥 zcela průhledné pozadí */
+  background: transparent;
   padding: 6px;
   border-radius: 16px;
-  box-shadow: 0 0 25px rgba(0,0,0,0.4); /* jen jemný vnější stín */
+  box-shadow: 0 0 25px rgba(0,0,0,0.4);
 }
-
 
   .cell {
     width: 100%;
@@ -79,10 +78,13 @@
     user-select: none;
     cursor: pointer;
     transition: filter .2s ease, background .2s ease, opacity .4s ease, box-shadow .2s ease;
+    /* pro „lava look“ a aby pseudo-elementy nepřetékaly */
+    position: relative;
+    overflow: hidden;
   }
   .cell:hover { filter: brightness(.96); }
   .cell.void {
-    background: transparent; /* 🔥 propadlá buňka – láva vidět */
+    background: transparent;
     color: transparent;
     cursor: not-allowed;
     box-shadow: none;
@@ -91,64 +93,96 @@
     box-shadow: 0 0 0 3px var(--accent2) inset, 0 0 0 2px var(--accent2);
   }
 
-  /* === Jednoduchý, čistý styl pro X (hráč) a O (bot) === */
 .cell.x {
   font-size: clamp(20px, 4vw, 30px);
   color: #ac1c0c;
   font-weight: 900;
 }
-
 .cell.o {
   font-size: clamp(20px, 4vw, 30px);
   color: #1500ff; 
   font-weight: 900;
 }
-
-/* Jemné zvýraznění vítězné buňky (není neon, jen decentní) */
 .cell.win {
   background-color: rgba(255, 255, 255, 0.977);
-  border: 2px solid rgba(6, 151, 37, 0.953);
+  border: 4px solid rgba(6, 151, 37, 0.953);
   transform: scale(1.05);
-  transition: transform 0.2s ease;
+  transition: transform 0.4s ease;
+}
+
+/* Náhled "spadne příště" */
+.cell.willFall {
+  outline: 2px dashed var(--accent2);
+  animation: willPulse 1s ease-in-out infinite;
+}
+@keyframes willPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,184,107,.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(255,184,107,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,184,107,0); }
+}
+
+/* Jemný a elegantní lava efekt – bez zvedání, jen záře a zhasnutí */
+@keyframes lava-fall {
+  0% {
+    background: var(--grid);
+    opacity: 1;
+    box-shadow: none;
+  }
+  30% {
+    background: #ff9f4a;
+    opacity: 1;
+    box-shadow: 0 0 14px 6px rgba(255,120,0,0.6);
+  }
+  60% {
+    background: #ff7b00;
+    opacity: 0.85;
+    box-shadow: 0 0 20px 10px rgba(255,80,0,0.4);
+  }
+  100% {
+    background: transparent;
+    opacity: 0;
+    box-shadow: none;
+  }
+}
+
+.cell.falling {
+  animation: lava-fall 0.8s ease-in-out forwards;
 }
 
 
-  /* 💥 Nová žhavá animace – skutečně pulzuje */
-  @keyframes lava-fall {
-    0% {
-      background: var(--grid);
-      transform: scale(1);
-      opacity: 1;
-      box-shadow: none;
-    }
-    25% {
-      background: #ffb347;
-      transform: scale(1.1);
-      box-shadow: 0 0 20px 8px rgba(255, 100, 0, 0.8);
-      opacity: 1;
-    }
-    50% {
-      background: #ff2400;
-      transform: scale(1.2);
-      box-shadow: 0 0 45px 12px rgba(255, 30, 0, 1);
-      opacity: 1;
-    }
-    75% {
-      background: #ff6600;
-      transform: scale(1.05);
-      box-shadow: 0 0 30px 10px rgba(255, 90, 0, 0.9);
-      opacity: 0.6;
-    }
-    100% {
-      background: transparent;
-      transform: scale(0.8);
-      opacity: 0;
-      box-shadow: none;
-    }
+  /* „Lava look“ – žhavé jádro a prstenec */
+  .cell.falling::before{
+    content:"";
+    position:absolute; inset:-20%;
+    background: radial-gradient(circle at 50% 40%,
+      rgba(255,180,80,0.95) 0%,
+      rgba(255,100,0,0.85) 35%,
+      rgba(255,30,0,0.6) 60%,
+      rgba(0,0,0,0) 70%);
+    filter: blur(6px);
+    border-radius: 50%;
+    transform: scale(0.7);
+    opacity: 0;
+    mix-blend-mode: screen;
+    animation: lava-core 1.1s ease-out forwards;
   }
-
-  .cell.falling {
-    animation: lava-fall 1.4s ease-in-out forwards;
+  .cell.falling::after{
+    content:"";
+    position:absolute; inset:0;
+    border-radius: inherit;
+    box-shadow: 0 0 0 0 rgba(255,90,0,0.55), 0 0 25px rgba(255,80,0,0.6) inset;
+    opacity: .9;
+    animation: lava-ring .9s ease-out forwards;
+  }
+  @keyframes lava-core{
+    0%   { transform: scale(0.7); opacity: 0; }
+    30%  { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0; }
+  }
+  @keyframes lava-ring{
+    0%   { box-shadow: 0 0 0 0 rgba(255,90,0,0.55); opacity: .9; }
+    70%  { box-shadow: 0 0 0 16px rgba(255,90,0,0); opacity: .4; }
+    100% { box-shadow: 0 0 0 22px rgba(255,90,0,0); opacity: 0; }
   }
 
   .card {
@@ -170,7 +204,6 @@
     background: rgba(5,8,14,.65);
     backdrop-filter: blur(3px);
   }
-
   .popup {
     width: min(92svw,520px);
     background: var(--panel);
@@ -179,7 +212,6 @@
     text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06);
   }
-
   h1 { margin: 6px 0 10px; font-size: clamp(20px,4.2svw,28px); }
   .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
   button {
@@ -194,10 +226,18 @@
   }
   .btn-ghost { background:#222a45; box-shadow:none; }
   .hidden { display:none; }
+
+  /* Freeze panel */
+  #freezeBtn{
+    background: linear-gradient(180deg,#5f70ff,#4758f0);
+    color:#fff;border:0;border-radius:12px;padding:8px 12px;
+    font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(95,112,255,.35);
+  }
+  #freezeBtn:disabled{opacity:.65;cursor:not-allowed}
+  #freezePanel .hint{opacity:.9;margin:6px 0 0}
 </style>
-
-
 </head>
+
 <body>
   <div class="wrap">
     <div id="hud" class="hidden">
@@ -217,17 +257,26 @@
       • Tiles disappear at random during the game.<br>
     </p>
   </div>
-</div>
 
+  <!-- Lava Freeze panel -->
+  <div id="freezePanel" class="card small hidden">
+    <b>Lava Freeze</b>
+    <p class="hint">Freeze falling tiles for <b>30 seconds</b>. Activate anytime during this game.</p>
+    <div class="row" style="margin-top:8px">
+      <button id="freezeBtn">Activate (30 seconds)</button>
+    </div>
+  </div>
+</div>
 
   <div id="gameOver" class="overlay hidden">
     <div class="popup">
       <h1 id="resultTitle">Game over</h1>
       <p id="resultDesc" class="small"></p>
-      <div class="row">
-        <button id="againBtn">Play again</button>
-        <button id="bonusBtn" class="btn-ghost">Bonus: see next drop</button>
-      </div>
+      <div class="row" style="flex-direction: column; gap: 16px;">
+      <button id="bonusBtn">Get Bonus: Lava Freeze</button>
+      <button id="againBtn" class="btn-ghost">Play again</button>
+</div>
+
     </div>
   </div>
 
@@ -235,246 +284,261 @@
   // ===== Config
   const SIZE = 11; const WIN = 5;
   const PLAYER = 1, AI = 2, VOID = -1;
-  const BASE_SHRINK_INTERVAL = 4; // one random drop every N half-moves
+  const BASE_SHRINK_INTERVAL = 3;
 
   // ===== State
   let grid=[], gameActive=false, playerTurn=true;
   let shrinkInterval=BASE_SHRINK_INTERVAL, turnsUntilShrink=BASE_SHRINK_INTERVAL;
   let nextFall=null, previewNextGame=false, previewThisGame=false;
   let selected=null, movesCount=0, startTs=null, timerHandle=null, winningLine=null;
+  let hasFreezeNextGame=false, freezeActiveUntil=0, freezeTickHandle=null;
 
   // ===== DOM
-  const boardEl = document.getElementById('board');
-  const hudEl = document.getElementById('hud');
-  const turnInfoEl = document.getElementById('turnInfo');
-  const timeInfoEl = document.getElementById('timeInfo');
-  const movesInfoEl = document.getElementById('movesInfo');
-  const howCard = document.getElementById('howCard');
-  const gameOver = document.getElementById('gameOver');
-  const resultTitle = document.getElementById('resultTitle');
-  const resultDesc = document.getElementById('resultDesc');
-  const againBtn = document.getElementById('againBtn');
-  const bonusBtn = document.getElementById('bonusBtn');
+  const boardEl=document.getElementById('board');
+  const hudEl=document.getElementById('hud');
+  const turnInfoEl=document.getElementById('turnInfo');
+  const timeInfoEl=document.getElementById('timeInfo');
+  const movesInfoEl=document.getElementById('movesInfo');
+  const howCard=document.getElementById('howCard');
+  const gameOver=document.getElementById('gameOver');
+  const resultTitle=document.getElementById('resultTitle');
+  const resultDesc=document.getElementById('resultDesc');
+  const againBtn=document.getElementById('againBtn');
+  const bonusBtn=document.getElementById('bonusBtn');
+  const freezePanel=document.getElementById('freezePanel');
+  const freezeBtn=document.getElementById('freezeBtn');
 
   againBtn.addEventListener('click', ()=>{ gameOver.classList.add('hidden'); startGame(); });
   bonusBtn.addEventListener('click', ()=>{
-    previewNextGame = true; bonusBtn.disabled = true;
-    resultDesc.textContent = 'Bonus ready: see next drop next game.';
-    againBtn.textContent = 'Play with bonus';
+    bonusBtn.disabled=true;
+    bonusBtn.textContent='Loading bonus...';
+    resultDesc.textContent='Preparing Lava Freeze...';
+    setTimeout(()=>{
+      hasFreezeNextGame=true;
+      gameOver.classList.add('hidden');
+      startGame();
+    },1200);
   });
+
+  if(freezeBtn){
+    freezeBtn.addEventListener('click',()=>{
+      if(freezeActiveUntil>Date.now()) return;
+      freezeActiveUntil=Date.now()+30000;
+      freezeBtn.disabled=true;
+      const tick=()=>{
+        const remain=Math.max(0,Math.ceil((freezeActiveUntil-Date.now())/1000));
+        freezeBtn.textContent=remain>0?`Freeze: ${remain}s`:'Freeze ended';
+        if(remain<=0){
+          clearInterval(freezeTickHandle);
+          freezeTickHandle=null;
+          setTimeout(()=>freezePanel.classList.add('hidden'),600);
+        }
+      };
+      tick();
+      freezeTickHandle=setInterval(tick,200);
+    });
+  }
 
   // ===== Init
   function setupBoardGrid(){
-    boardEl.style.setProperty('--size', SIZE);
+    boardEl.style.setProperty('--size',SIZE);
     boardEl.innerHTML='';
     for(let y=0;y<SIZE;y++){
       for(let x=0;x<SIZE;x++){
         const d=document.createElement('div');
-        d.className='cell'; d.dataset.x=x; d.dataset.y=y;
-        d.addEventListener('click', onCellClick);
+        d.className='cell';
+        d.dataset.x=x; d.dataset.y=y;
+        d.addEventListener('click',onCellClick);
         boardEl.appendChild(d);
       }
     }
   }
-
   function startGame(){ initState(); }
 
   function initState(){
-    grid = Array.from({length: SIZE}, ()=>Array(SIZE).fill(0));
-    previewThisGame = previewNextGame; previewNextGame = false; // consume bonus
-    shrinkInterval = BASE_SHRINK_INTERVAL;
-    turnsUntilShrink = shrinkInterval;
-    playerTurn = true; gameActive = true;
-    selected = null; movesCount = 0; startTs = null; winningLine = null;
-    stopTimer(); timeInfoEl.textContent = 'Time: 00:00'; movesInfoEl.textContent = 'Moves: 0';
+    grid=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
+    previewThisGame=previewNextGame; previewNextGame=false;
+    shrinkInterval=BASE_SHRINK_INTERVAL;
+    turnsUntilShrink=shrinkInterval;
+    playerTurn=true; gameActive=true;
+    selected=null; movesCount=0; startTs=null; winningLine=null;
+    stopTimer(); timeInfoEl.textContent='Time: 00:00'; movesInfoEl.textContent='Moves: 0';
     hudEl.classList.remove('hidden');
-    nextFall = pickNextFallTile();
+    nextFall=pickNextFallTile();
+    freezeActiveUntil=0;
+    if(hasFreezeNextGame){
+      hasFreezeNextGame=false;
+      freezePanel.classList.remove('hidden');
+      freezeBtn.disabled=false;
+      freezeBtn.textContent='Activate (30 sec)';
+    } else {
+      freezePanel.classList.add('hidden');
+    }
     updateHUD();
     renderAll();
   }
 
-  // ===== Helpers
-  function inBounds(x,y){ return x>=0 && x<SIZE && y>=0 && y<SIZE; }
+  function inBounds(x,y){return x>=0&&x<SIZE&&y>=0&&y<SIZE;}
   function pickNextFallTile(){
-    const c=[]; for(let y=0;y<SIZE;y++) for(let x=0;x<SIZE;x++) if(grid[y][x]!==VOID) c.push({x,y});
-    if(!c.length) return null; return c[Math.floor(Math.random()*c.length)];
+    const c=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]!==VOID)c.push({x,y});
+    if(!c.length)return null;return c[Math.floor(Math.random()*c.length)];
   }
-  function formatTime(ms){ const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60; return (m<10?'0':'')+m+':' + (r<10?'0':'')+r; }
-  function startTimer(){ if(timerHandle) return; startTs=Date.now(); timerHandle=setInterval(()=>{ timeInfoEl.textContent='Time: '+formatTime(Date.now()-startTs); },250); }
-  function stopTimer(){ if(timerHandle){ clearInterval(timerHandle); timerHandle=null; } }
+  function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return(m<10?'0':'')+m+':' +(r<10?'0':'')+r;}
+  function startTimer(){if(timerHandle)return;startTs=Date.now();timerHandle=setInterval(()=>{timeInfoEl.textContent='Time: '+formatTime(Date.now()-startTs);},250);}
+  function stopTimer(){if(timerHandle){clearInterval(timerHandle);timerHandle=null;}}
 
-  // ===== Render
+  // === FIX: render nepřepisuje celé className, zachová .falling
   function renderAll(){
-    const cells = boardEl.children;
+    const cells=boardEl.children;
     for(let y=0;y<SIZE;y++){
       for(let x=0;x<SIZE;x++){
         const idx=y*SIZE+x, el=cells[idx], v=grid[y][x];
-        el.className='cell';
-        if(v===VOID){ el.classList.add('void'); el.textContent=''; }
-else if(v===PLAYER){ el.classList.add('x'); el.textContent='✕'; }
-else if(v===AI){ el.classList.add('o'); el.textContent='⭘'; }
 
-        else { el.textContent=''; }
-        if(previewThisGame && nextFall && nextFall.x===x && nextFall.y===y && v!==VOID) el.classList.add('willFall');
+        const isFalling = el.classList.contains('falling');
+
+        // vyčisti stavové třídy (ale nesahej na .falling)
+        el.classList.remove('void','x','o','selected','willFall','win');
+
+        if(v===VOID){ el.classList.add('void'); el.textContent=''; }
+        else if(v===PLAYER){ el.classList.add('x'); el.textContent='✕'; }
+        else if(v===AI){ el.classList.add('o'); el.textContent='⭘'; }
+        else{ el.textContent=''; }
+
+        if(!isFalling && previewThisGame && nextFall && nextFall.x===x && nextFall.y===y && v!==VOID){
+          el.classList.add('willFall');
+        }
         if(selected && selected.x===x && selected.y===y) el.classList.add('selected');
       }
     }
   }
 
   function updateHUD(){
-  turnInfoEl.textContent = 'Turn: ' + (playerTurn ? 'you' : 'bot');
-    movesInfoEl.textContent = 'Moves: ' + movesCount;
+    turnInfoEl.textContent='Turn: '+(playerTurn?'you':'bot');
+    movesInfoEl.textContent='Moves: '+movesCount;
   }
 
-  // ===== Interaction (two-tap confirm)
   function onCellClick(e){
-    if(!gameActive || !playerTurn) return;
-    const x=+e.currentTarget.dataset.x, y=+e.currentTarget.dataset.y;
-    if(!inBounds(x,y) || grid[y][x]!==0) return;
-
-    if(howCard && !howCard.classList.contains('hidden')) howCard.classList.add('hidden');
-
-    if(!selected || selected.x!==x || selected.y!==y){ selected={x,y}; renderAll(); return; }
-
-    // confirm
-    place(x,y,PLAYER); movesCount++; updateHUD(); if(movesCount===1) startTimer(); selected=null;
-    if(checkWin(PLAYER)){ endGame(true); return; }
-    advanceShrink(); if(!gameActive) return;
-    playerTurn=false; updateHUD();
-    setTimeout(()=>{ aiMove(); if(gameActive){ advanceShrink(); playerTurn=true; updateHUD(); } },120);
+    if(!gameActive||!playerTurn)return;
+    const x=+e.currentTarget.dataset.x,y=+e.currentTarget.dataset.y;
+    if(!inBounds(x,y)||grid[y][x]!==0)return;
+    if(howCard&&!howCard.classList.contains('hidden'))howCard.classList.add('hidden');
+    if(!selected||selected.x!==x||selected.y!==y){selected={x,y};renderAll();return;}
+    place(x,y,PLAYER);movesCount++;updateHUD();if(movesCount===1)startTimer();selected=null;
+    if(checkWin(PLAYER)){endGame(true);return;}
+    advanceShrink();if(!gameActive)return;
+    playerTurn=false;updateHUD();
+    setTimeout(()=>{aiMove();if(gameActive){advanceShrink();playerTurn=true;updateHUD();}},120);
   }
+  function place(x,y,who){grid[y][x]=who;renderAll();}
 
-  function place(x,y,who){ grid[y][x]=who; renderAll(); }
-
-  // ===== Random drop
   function advanceShrink(){
-    turnsUntilShrink--; renderAll();
-    if(turnsUntilShrink<=0){ performFall(); turnsUntilShrink=shrinkInterval; renderAll(); }
+    turnsUntilShrink--;renderAll();
+    if(turnsUntilShrink<=0){performFall();turnsUntilShrink=shrinkInterval;}
   }
 
-function performFall() {
-  if (!nextFall) return;
-  const { x, y } = nextFall;
-  if (inBounds(x, y)) {
-    const idx = y * SIZE + x;
-    const el = boardEl.children[idx];
+  // === FIX: spolehlivý start/doběh animace + změna stavu až po ní
+  function performFall(){
+    if (Date.now() < freezeActiveUntil) { nextFall = pickNextFallTile(); return; }
+    if (!nextFall) return;
+
+    const {x,y} = nextFall;
+    if (!inBounds(x,y)) { nextFall = pickNextFallTile(); return; }
+
+    const idx = y*SIZE + x;
+    const el  = boardEl.children[idx];
+    if (!el) return;
+
+    // odeber telegraph na padající buňce a restartuj animaci
+    el.classList.remove('willFall','falling');
+    void el.offsetWidth; // reflow pro restart animace
     el.classList.add('falling');
-    boardEl.classList.add('shake'); // 💥 jemný otřes
-    setTimeout(() => boardEl.classList.remove('shake'), 200);
-    setTimeout(() => {
+
+    setTimeout(()=>{
+      el.classList.remove('falling');
       grid[y][x] = VOID;
       renderAll();
-    }, 1100);
+      nextFall = pickNextFallTile();
+      renderAll();
+    }, 1000);
   }
-  nextFall = pickNextFallTile();
-}
 
-
-  // ===== Win / Draw
   function checkWin(who){
     const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-    for(let y=0;y<SIZE;y++) for(let x=0;x<SIZE;x++){
-      if(grid[y][x]!==who) continue;
-      for(const [dx,dy] of dirs){
-        let cells=[{x,y}], i=1;
-        while(cells.length<WIN){ const nx=x+dx*i, ny=y+dy*i; if(!inBounds(nx,ny) || grid[ny][nx]!==who) break; cells.push({x:nx,y:ny}); i++; }
-        if(cells.length>=WIN){ winningLine=cells; return true; }
+    for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+      if(grid[y][x]!==who)continue;
+      for(const[dx,dy]of dirs){
+        let cells=[{x,y}],i=1;
+        while(cells.length<WIN){const nx=x+dx*i,ny=y+dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cells.push({x:nx,y:ny});i++;}
+        if(cells.length>=WIN){winningLine=cells;return true;}
       }
     }
-    // full board -> draw
-    for(let yy=0; yy<SIZE; yy++){ for(let xx=0; xx<SIZE; xx++){ if(grid[yy][xx]===0) return false; } }
+    for(let yy=0;yy<SIZE;yy++){for(let xx=0;xx<SIZE;xx++){if(grid[yy][xx]===0)return false;}}
     return true;
   }
 
-function endGame(playerWon) {
-  gameActive = false;
-  stopTimer();
-
-  // zvýrazní výherní řadu
-  if (winningLine && winningLine.length) {
-    const cells = boardEl.children;
-    for (const { x, y } of winningLine) {
-      cells[y * SIZE + x].classList.add('win');
+  function endGame(playerWon){
+    gameActive=false;stopTimer();
+    if(freezeTickHandle){clearInterval(freezeTickHandle);freezeTickHandle=null;}
+    freezePanel.classList.add('hidden');
+    if(winningLine&&winningLine.length){
+      const cells=boardEl.children;
+      for(const{x,y}of winningLine){cells[y*SIZE+x].classList.add('win');}
     }
 
-    // 🔹 krátké bliknutí celé výherní linie před Game Over
-    setTimeout(() => {
-      for (const { x, y } of winningLine) {
-        const el = cells[y * SIZE + x];
-        el.animate(
-          [
-            { opacity: 1 },
-            { opacity: 0.3 },
-            { opacity: 1 }
-          ],
-          { duration: 500, easing: 'ease-in-out' }
-        );
+    setTimeout(()=>{
+      gameOver.classList.remove('hidden');
+      bonusBtn.disabled=false;
+      againBtn.textContent='Play again';
+      if(playerWon===true){
+        bonusBtn.classList.add('hidden');
+        resultTitle.textContent='YOU WIN!';
+        const total=startTs?formatTime(Date.now()-startTs):'00:00';
+        resultDesc.textContent=`Time: ${total} • Moves: ${movesCount}`;
+      }else if(playerWon===false){
+        bonusBtn.classList.remove('hidden');
+        bonusBtn.textContent='Get Bonus: Lava Freeze';
+        resultTitle.textContent='YOU LOSE!';
+        resultDesc.textContent='Get your bonus! Lava Freeze stops all falling tiles for 30 seconds. Only in your next game.';
+      }else{
+        bonusBtn.classList.add('hidden');
+        resultTitle.textContent='Draw';
+        resultDesc.textContent=`Moves: ${movesCount}`;
       }
-    }, 900); // začne blikat těsně před koncem
+    },2000);
   }
 
-  // 🔹 počkej, než efekt doběhne → pak Game Over popup
-  setTimeout(() => {
-    gameOver.classList.remove('hidden');
-    bonusBtn.disabled = false;
-    againBtn.textContent = 'Play again';
-
-    if (playerWon === true) {
-      resultTitle.textContent = 'You win!';
-      const total = startTs ? formatTime(Date.now() - startTs) : '00:00';
-      resultDesc.textContent = 'Time: ' + total + ' • Moves: ' + movesCount;
-    } else if (playerWon === false) {
-      resultTitle.textContent = 'You lose';
-      resultDesc.textContent = 'No score this time. Try again!';
-    } else {
-      resultTitle.textContent = 'Draw';
-      resultDesc.textContent = 'No more free tiles.';
-    }
-  }, 1500);
-}
-
-  // ===== Simple AI
- function aiMove(){
-  const move = pickBestMove();
-  if(!move){ endGame(null); return; }
-  place(move.x, move.y, AI);
-
-  // 🔹 přidáme krátké pulznutí
-  const idx = move.y * SIZE + move.x;
-  const el = boardEl.children[idx];
-  el.animate([
-    { transform: 'scale(1)', opacity: 1 },
-    { transform: 'scale(1.25)', opacity: 0.8 },
-    { transform: 'scale(1)', opacity: 1 }
-  ], { duration: 300, easing: 'ease-out' });
-
-  if(checkWin(AI)){ endGame(false); }
-}
+  function aiMove(){
+    const move=pickBestMove();
+    if(!move){endGame(null);return;}
+    place(move.x,move.y,AI);
+    const idx=move.y*SIZE+move.x;
+    const el=boardEl.children[idx];
+    el.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.25)',opacity:.8},{transform:'scale(1)',opacity:1}],{duration:300,easing:'ease-out'});
+    if(checkWin(AI)){endGame(false);}
+  }
 
   function pickBestMove(){
-    let best=null, bestScore=-Infinity;
-    for(let y=0;y<SIZE;y++) for(let x=0;x<SIZE;x++){
-      if(grid[y][x]!==0) continue;
-      const aiLen=projectedLineLen(x,y,AI), plLen=projectedLineLen(x,y,PLAYER);
+    let best=null,bestScore=-Infinity;
+    for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+      if(grid[y][x]!==0)continue;
+      const aiLen=projectedLineLen(x,y,AI),plLen=projectedLineLen(x,y,PLAYER);
       const centerBonus=-(Math.abs((SIZE-1)/2-x)+Math.abs((SIZE-1)/2-y))*0.03;
-      const dangerPenalty=(previewThisGame && nextFall && nextFall.x===x && nextFall.y===y && turnsUntilShrink<=1)?-5:0;
-      const score=aiLen*2.2 + plLen*2.0 + centerBonus + dangerPenalty;
-      if(score>bestScore){ bestScore=score; best={x,y}; }
+      const dangerPenalty=(previewThisGame&&nextFall&&nextFall.x===x&&nextFall.y===y&&turnsUntilShrink<=1)?-5:0;
+      const score=aiLen*2.2+plLen*2.0+centerBonus+dangerPenalty;
+      if(score>bestScore){bestScore=score;best={x,y};}
     }
     return best;
   }
-
   function projectedLineLen(x,y,who){
-    let maxLen=1; const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-    for(const [dx,dy] of dirs){
-      let cnt=1, i=1; while(true){ const nx=x+dx*i, ny=y+dy*i; if(!inBounds(nx,ny) || grid[ny][nx]!==who) break; cnt++; i++; }
-      i=1; while(true){ const nx=x-dx*i, ny=y-dy*i; if(!inBounds(nx,ny) || grid[ny][nx]!==who) break; cnt++; i++; }
-      if(cnt>maxLen) maxLen=cnt;
+    let maxLen=1;const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+    for(const[dx,dy]of dirs){
+      let cnt=1,i=1;while(true){const nx=x+dx*i,ny=y+dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cnt++;i++;}
+      i=1;while(true){const nx=x-dx*i,ny=y-dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cnt++;i++;}
+      if(cnt>maxLen)maxLen=cnt;
     }
     return maxLen;
   }
 
-  // boot
   setupBoardGrid();
   startGame();
 </script>
