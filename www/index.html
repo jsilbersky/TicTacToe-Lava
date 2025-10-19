@@ -3,6 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- Security: strict, inline allowed for this single-file app -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    img-src 'self' data: blob:;
+    style-src 'self' 'unsafe-inline';
+    script-src 'self' 'unsafe-inline';
+    font-src 'self' data:;
+    connect-src 'self';
+    media-src 'none';
+    object-src 'none';
+    base-uri 'self';
+    frame-ancestors 'none';
+    form-action 'self';
+    upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), interest-cohort=()">
+
   <title>Tic-Tac Rush – Mobile</title>
 
 <style>
@@ -11,230 +32,195 @@
     --void:#1f2937; --accent:#8b9dff; --accent2:#ffb86b; --good:#35d49a; --bad:#ff6b6b;
   }
   *{box-sizing:border-box}
-  
+
   body {
     margin: 0;
     height: 100dvh;
-    display: grid;
-    place-items: start center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     overflow: hidden;
-    background: url("lava.webp") center/cover no-repeat;
+    touch-action: manipulation;
+    background: url("lava.webp") center center / cover no-repeat;
     color: var(--text);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .wrap {
-    display: grid;
-    gap: 10px;
-    align-items: center;
-    justify-items: center;
-    margin-top: 16vh;
-  }
-
-  #hud {
     display: flex;
-    gap: 8px;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    flex-wrap: wrap;
-    background: rgba(18,24,42,.9);
-    padding: 8px 10px;
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0,0,0,.25);
-    font-weight: 600;
-    min-height: 38px;
-  }
-  #hud .badge {
-    padding: 5px 9px;
-    border-radius: 999px;
-    background: #202846;
-    font-weight: 700;
-    font-size: .85rem;
-  }
-
-#board {
-  width: min(96vw, 520px);
-  aspect-ratio: 1 / 1;
-  display: grid;
-  grid-template-columns: repeat(var(--size, 11), 1fr);
-  grid-template-rows: repeat(var(--size, 11), 1fr);
-  gap: 2px;
-  background: transparent;
-  padding: 6px;
-  border-radius: 16px;
-  box-shadow: 0 0 25px rgba(0,0,0,0.4);
-}
-
-  .cell {
-    width: 100%;
-    height: 100%;
-    background: var(--grid);
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    font-size: clamp(12px, 3.2vw, 22px);
-    color: #111827;
-    user-select: none;
-    cursor: pointer;
-    transition: filter .2s ease, background .2s ease, opacity .4s ease, box-shadow .2s ease;
-    /* pro „lava look“ a aby pseudo-elementy nepřetékaly */
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 16vh;
     position: relative;
-    overflow: hidden;
+    z-index: 1;
   }
-  .cell:hover { filter: brightness(.96); }
-  .cell.void {
+
+  #hud{
+    display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;
+    background:rgba(18,24,42,.9);
+    padding:8px 10px; border-radius:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,.25);
+    font-weight:600; min-height:38px;
+  }
+  #hud .badge{ padding:5px 9px; border-radius:999px; background:#202846; font-weight:700; font-size:.85rem; }
+
+  #board {
+    width: min(96vw, 520px);
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: repeat(var(--size, 11), var(--cell, 1fr));
+    grid-template-rows:    repeat(var(--size, 11), var(--cell, 1fr));
+    gap: 2px;
     background: transparent;
-    color: transparent;
-    cursor: not-allowed;
+    border-radius: 0;
     box-shadow: none;
-  }
-  .cell.selected {
-    box-shadow: 0 0 0 3px var(--accent2) inset, 0 0 0 2px var(--accent2);
+    position: relative;
+    overflow: visible;
+    z-index: 1;
+    justify-content: center;
+    align-content:   center;
+    margin-inline: auto;
   }
 
-.cell.x {
-  font-size: clamp(20px, 4vw, 30px);
-  color: #ac1c0c;
-  font-weight: 900;
-}
-.cell.o {
-  font-size: clamp(20px, 4vw, 30px);
-  color: #1500ff; 
-  font-weight: 900;
-}
-.cell.win {
-  background-color: rgba(255, 255, 255, 0.977);
-  border: 4px solid rgba(6, 151, 37, 0.953);
-  transform: scale(1.05);
-  transition: transform 0.4s ease;
-}
-
-/* Náhled "spadne příště" */
-.cell.willFall {
-  outline: 2px dashed var(--accent2);
-  animation: willPulse 1s ease-in-out infinite;
-}
-@keyframes willPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(255,184,107,.6); }
-  70%  { box-shadow: 0 0 0 10px rgba(255,184,107,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,184,107,0); }
-}
-
-/* Jemný a elegantní lava efekt – bez zvedání, jen záře a zhasnutí */
-@keyframes lava-fall {
-  0% {
-    background: var(--grid);
-    opacity: 1;
-    box-shadow: none;
-  }
-  30% {
-    background: #ff9f4a;
-    opacity: 1;
-    box-shadow: 0 0 14px 6px rgba(255,120,0,0.6);
-  }
-  60% {
-    background: #ff7b00;
-    opacity: 0.85;
-    box-shadow: 0 0 20px 10px rgba(255,80,0,0.4);
-  }
-  100% {
-    background: transparent;
-    opacity: 0;
-    box-shadow: none;
-  }
-}
-
-.cell.falling {
-  animation: lava-fall 0.8s ease-in-out forwards;
-}
-
-
-  /* „Lava look“ – žhavé jádro a prstenec */
-  .cell.falling::before{
-    content:"";
-    position:absolute; inset:-20%;
-    background: radial-gradient(circle at 50% 40%,
-      rgba(255,180,80,0.95) 0%,
-      rgba(255,100,0,0.85) 35%,
-      rgba(255,30,0,0.6) 60%,
-      rgba(0,0,0,0) 70%);
-    filter: blur(6px);
-    border-radius: 50%;
-    transform: scale(0.7);
-    opacity: 0;
+  #board #lavaFX{
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+    pointer-events: none;
+    z-index: 0;
     mix-blend-mode: screen;
+    filter: blur(26px) saturate(1.08);
+    opacity: .55;
+  }
+  #board #lavaFX .flare {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 180px;
+    height: 180px;
+    transform: translate(-50%, -50%) scale(0.8);
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform, opacity, filter;
+    background: radial-gradient(circle at 50% 42%,
+      rgba(255, 195, 90, .95) 0%,
+      rgba(255, 140, 40, .80) 35%,
+      rgba(255, 70, 10, .45) 60%,
+      rgba(255, 70, 10, 0) 82%);
+    animation: flareLife 4.4s ease-out forwards;
+  }
+  @keyframes flareLife {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); filter: brightness(1); }
+    18% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05); filter: brightness(1.25); }
+    55% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); filter: brightness(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); filter: brightness(.9); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #board #lavaFX .flare{ animation-duration:2.2s; }
+  }
+
+  .cell{
+    width:100%; height:100%;
+    background:url("tile.webp") center / 100% 100% no-repeat;
+    border-radius:10px;
+    display:grid; place-items:center;
+    font-weight:800; font-size:clamp(12px,3.2vw,22px);
+    color:#111827; user-select:none; cursor:pointer;
+    transition:filter .2s ease, background .2s ease, opacity .4s ease, box-shadow .2s ease;
+    position:relative; overflow:hidden; z-index:1;
+    box-shadow:inset 0 0 6px rgba(0,0,0,0.6);
+  }
+  .cell::after{
+    content:""; position:absolute; inset:0;
+    background: radial-gradient(circle at center, rgba(255,100,0,0.15), transparent 70%);
+    opacity:0; transition:opacity .3s ease;
+  }
+  .cell.x::after, .cell.o::after{ opacity:1; }
+
+  .cell .mark{ width:70%; height:70%; display:block; }
+  .cell .mark-svg{ width:100%; height:100%; display:block; }
+  .cell.x .mark-svg{ filter: drop-shadow(0 0 8px rgba(255,106,0,.6)) drop-shadow(0 0 16px rgba(255,69,0,.35)); }
+  .cell.o .mark-svg{ filter: drop-shadow(0 0 8px rgba(255,187,51,.55)) drop-shadow(0 0 16px rgba(255,136,0,.30)); }
+
+  .cell:hover{ filter:brightness(.96); }
+  .cell.void{ background:transparent; color:transparent; cursor:not-allowed; box-shadow:none; }
+  .cell.selected{ box-shadow:0 0 0 3px var(--accent2) inset, 0 0 0 2px var(--accent2); }
+
+  .cell.x{
+    color:#ff6a00; font-weight:900;
+    text-shadow:0 0 8px #ff6a00, 0 0 16px #ff4500, 0 0 28px rgba(255,100,0,0.6);
+  }
+  .cell.o{
+    color:#ffaa00; font-weight:900;
+    text-shadow:0 0 8px #ffbb33, 0 0 16px #ff8800, 0 0 28px rgba(255,120,0,0.5);
+  }
+
+  /* WIN HIGHLIGHT: strong green border, no fill */
+.cell.win{
+  border:5px solid #14e06e;
+  box-shadow:0 0 14px 3px rgba(20,224,110,.45);
+}
+
+  .cell.willFall{ outline:2px dashed var(--accent2); animation:willPulse 1s ease-in-out infinite; }
+  @keyframes willPulse{
+    0%{ box-shadow:0 0 0 0 rgba(255,184,107,.6); }
+    70%{ box-shadow:0 0 0 10px rgba(255,184,107,0); }
+    100%{ box-shadow:0 0 0 0 rgba(255,184,107,0); }
+  }
+
+  @keyframes lava-fall{
+    0%{ background:var(--grid); opacity:1; box-shadow:none; }
+    30%{ background:#ff9f4a; opacity:1; box-shadow:0 0 14px 6px rgba(255,120,0,0.6); }
+    60%{ background:#ff7b00; opacity:.85; box-shadow:0 0 20px 10px rgba(255,80,0,0.4); }
+    100%{ background:transparent; opacity:0; box-shadow:none; }
+  }
+  .cell.falling{ animation:lava-fall .8s ease-in-out forwards; }
+  .cell.falling::before{
+    content:""; position:absolute; inset:-20%;
+    background: radial-gradient(circle at 50% 40%,
+      rgba(255,180,80,0.95) 0%, rgba(255,100,0,0.85) 35%,
+      rgba(255,30,0,0.6) 60%, rgba(0,0,0,0) 70%);
+    filter:blur(6px); border-radius:50%;
+    transform:scale(0.7); opacity:0; mix-blend-mode:screen;
     animation: lava-core 1.1s ease-out forwards;
   }
   .cell.falling::after{
-    content:"";
-    position:absolute; inset:0;
-    border-radius: inherit;
-    box-shadow: 0 0 0 0 rgba(255,90,0,0.55), 0 0 25px rgba(255,80,0,0.6) inset;
-    opacity: .9;
-    animation: lava-ring .9s ease-out forwards;
+    content:""; position:absolute; inset:0; border-radius:inherit;
+    box-shadow:0 0 0 0 rgba(255,90,0,0.55), 0 0 25px rgba(255,80,0,0.6) inset;
+    opacity:.9; animation: lava-ring .9s ease-out forwards;
   }
-  @keyframes lava-core{
-    0%   { transform: scale(0.7); opacity: 0; }
-    30%  { transform: scale(1.05); opacity: 1; }
-    100% { transform: scale(0.8); opacity: 0; }
-  }
-  @keyframes lava-ring{
-    0%   { box-shadow: 0 0 0 0 rgba(255,90,0,0.55); opacity: .9; }
-    70%  { box-shadow: 0 0 0 16px rgba(255,90,0,0); opacity: .4; }
-    100% { box-shadow: 0 0 0 22px rgba(255,90,0,0); opacity: 0; }
-  }
+  @keyframes lava-core{ 0%{transform:scale(.7);opacity:0} 30%{transform:scale(1.05);opacity:1} 100%{transform:scale(.8);opacity:0} }
+  @keyframes lava-ring{ 0%{box-shadow:0 0 0 0 rgba(255,90,0,.55);opacity:.9} 70%{box-shadow:0 0 0 16px rgba(255,90,0,0);opacity:.4} 100%{box-shadow:0 0 0 22px rgba(255,90,0,0);opacity:0} }
 
-  .card {
-    width: min(96svw,520px);
-    background: var(--panel);
-    border-radius: 14px;
-    padding: 12px 14px;
-    text-align: left;
-    box-shadow: 0 8px 24px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06);
+  .card{
+    width:min(96svw,520px); background:var(--panel); border-radius:14px;
+    padding:12px 14px; text-align:left;
+    box-shadow:0 8px 24px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06);
   }
+  .small{ font-size:.95rem; opacity:.9; }
 
-  .small { font-size: .95rem; opacity: .9; }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background: rgba(5,8,14,.65);
-    backdrop-filter: blur(3px);
+  .overlay{
+    position:fixed; inset:0; display:grid; place-items:center;
+    background:rgba(5,8,14,.65); backdrop-filter:blur(3px); z-index:1000;
   }
-  .popup {
-    width: min(92svw,520px);
-    background: var(--panel);
-    border-radius: 16px;
-    padding: 18px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06);
+  .popup{
+    width:min(92svw,520px); background:var(--panel); border-radius:16px; padding:18px; text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06);
   }
-  h1 { margin: 6px 0 10px; font-size: clamp(20px,4.2svw,28px); }
-  .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
-  button {
-    background: linear-gradient(180deg,#5f70ff,#4758f0);
-    color: #fff;
-    border: 0;
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 8px 18px rgba(95,112,255,.35);
-  }
-  .btn-ghost { background:#222a45; box-shadow:none; }
-  .hidden { display:none; }
+  h1{ margin:6px 0 10px; font-size:clamp(20px,4.2svw,28px); }
+  .row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+  button{ background:linear-gradient(180deg,#5f70ff,#4758f0); color:#fff; border:0; border-radius:12px; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 8px 18px rgba(95,112,255,.35); }
+  .btn-ghost{ background:#222a45; box-shadow:none; }
+  .hidden{ display:none; }
 
   /* Freeze panel */
-  #freezeBtn{
-    background: linear-gradient(180deg,#5f70ff,#4758f0);
-    color:#fff;border:0;border-radius:12px;padding:8px 12px;
-    font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(95,112,255,.35);
-  }
-  #freezeBtn:disabled{opacity:.65;cursor:not-allowed}
-  #freezePanel .hint{opacity:.9;margin:6px 0 0}
+  #freezeBtn{ background:linear-gradient(180deg,#5f70ff,#4758f0); color:#fff; border:0; border-radius:12px; padding:8px 12px; font-weight:800; cursor:pointer; box-shadow:0 6px 16px rgba(95,112,255,.35); }
+  #freezeBtn:disabled{ opacity:.65; cursor:not-allowed }
+  #freezePanel .hint{ opacity:.9; margin:6px 0 0 }
 </style>
 </head>
 
@@ -248,299 +234,460 @@
 
     <div id="board"></div>
 
-<div class="info-slot">
-  <div class="card small" id="howCard">
-    <b>How to play</b>
-    <p style="margin-top:6px">
-      • Tap a tile to <b>select</b>. Tap again to <b>confirm</b>.<br>
-      • Make <b>5 in a row</b> (row / column / diagonal).<br>
-      • Tiles disappear at random during the game.<br>
-    </p>
-  </div>
+    <div class="info-slot">
+      <div class="card small" id="howCard">
+        <b>How to play</b>
+        <p style="margin-top:6px">
+          • Tap a tile to <b>select</b>. Tap again to <b>place</b>.<br>
+          • Make <b>5 in a row</b> (row / column / diagonal).<br>
+          • Some tiles <b>fall into lava</b> at random.<br>
+        </p>
+      </div>
 
-  <!-- Lava Freeze panel -->
-  <div id="freezePanel" class="card small hidden">
-    <b>Lava Freeze</b>
-    <p class="hint">Freeze falling tiles for <b>30 seconds</b>. Activate anytime during this game.</p>
-    <div class="row" style="margin-top:8px">
-      <button id="freezeBtn">Activate (30 seconds)</button>
+      <div id="freezePanel" class="card small hidden">
+        <b>Lava Freeze</b>
+        <p class="hint">Stop falling tiles for <b>30 seconds</b>. Use anytime in this game.</p>
+        <div class="row" style="margin-top:8px">
+          <button id="freezeBtn">Activate (30 sec)</button>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
   <div id="gameOver" class="overlay hidden">
     <div class="popup">
       <h1 id="resultTitle">Game over</h1>
       <p id="resultDesc" class="small"></p>
       <div class="row" style="flex-direction: column; gap: 16px;">
-      <button id="bonusBtn">Get Bonus: Lava Freeze</button>
-      <button id="againBtn" class="btn-ghost">Play again</button>
-</div>
-
+        <button id="bonusBtn">Get Bonus: Lava Freeze</button>
+        <button id="againBtn" class="btn-ghost">Play again</button>
+      </div>
     </div>
   </div>
 
 <script>
-  // ===== Config
-  const SIZE = 11; const WIN = 5;
-  const PLAYER = 1, AI = 2, VOID = -1;
-  const BASE_SHRINK_INTERVAL = 3;
+'use strict';
 
-  // ===== State
-  let grid=[], gameActive=false, playerTurn=true;
-  let shrinkInterval=BASE_SHRINK_INTERVAL, turnsUntilShrink=BASE_SHRINK_INTERVAL;
-  let nextFall=null, previewNextGame=false, previewThisGame=false;
-  let selected=null, movesCount=0, startTs=null, timerHandle=null, winningLine=null;
-  let hasFreezeNextGame=false, freezeActiveUntil=0, freezeTickHandle=null;
+/* ===== Config ===== */
+const SIZE = 11, WIN = 5;
+const PLAYER = 1, AI = 2, VOID = -1;
+const BASE_SHRINK_INTERVAL = 3;
 
-  // ===== DOM
-  const boardEl=document.getElementById('board');
-  const hudEl=document.getElementById('hud');
-  const turnInfoEl=document.getElementById('turnInfo');
-  const timeInfoEl=document.getElementById('timeInfo');
-  const movesInfoEl=document.getElementById('movesInfo');
-  const howCard=document.getElementById('howCard');
-  const gameOver=document.getElementById('gameOver');
-  const resultTitle=document.getElementById('resultTitle');
-  const resultDesc=document.getElementById('resultDesc');
-  const againBtn=document.getElementById('againBtn');
-  const bonusBtn=document.getElementById('bonusBtn');
-  const freezePanel=document.getElementById('freezePanel');
-  const freezeBtn=document.getElementById('freezeBtn');
+/* ---- Pixel-perfect board ---- */
+const BOARD_MAX_W = 520;
+const BOARD_VW_FRAC = 0.96;
+const BOARD_PAD = 0;
+const BOARD_GAP = 2;
 
-  againBtn.addEventListener('click', ()=>{ gameOver.classList.add('hidden'); startGame(); });
-  bonusBtn.addEventListener('click', ()=>{
-    bonusBtn.disabled=true;
-    bonusBtn.textContent='Loading bonus...';
-    resultDesc.textContent='Preparing Lava Freeze...';
-    setTimeout(()=>{
-      hasFreezeNextGame=true;
-      gameOver.classList.add('hidden');
-      startGame();
-    },1200);
+function resizeBoardPixelPerfect(){
+  const targetW = Math.min(window.innerWidth * BOARD_VW_FRAC, BOARD_MAX_W);
+  const inner = targetW - 2*BOARD_PAD - (SIZE - 1) * BOARD_GAP;
+  const cell = Math.max(1, Math.floor(inner / SIZE));
+  const realW = cell * SIZE + (SIZE - 1) * BOARD_GAP + 2 * BOARD_PAD;
+  boardEl.style.setProperty('--cell', cell + 'px');
+  boardEl.style.width  = realW + 'px';
+  boardEl.style.height = realW + 'px';
+}
+window.addEventListener('resize', resizeBoardPixelPerfect, {passive:true});
+window.addEventListener('orientationchange', resizeBoardPixelPerfect);
+
+/* ===== State ===== */
+let grid=[], gameActive=false, playerTurn=true;
+let shrinkInterval=BASE_SHRINK_INTERVAL, turnsUntilShrink=BASE_SHRINK_INTERVAL;
+let nextFall=null, previewNextGame=false, previewThisGame=false;
+let selected=null, movesCount=0, startTs=null, timerHandle=null, winningLine=null;
+let hasFreezeNextGame=false, freezeActiveUntil=0, freezeTickHandle=null;
+
+/* ===== DOM ===== */
+const boardEl=document.getElementById('board');
+const hudEl=document.getElementById('hud');
+const turnInfoEl=document.getElementById('turnInfo');
+const timeInfoEl=document.getElementById('timeInfo');
+const movesInfoEl=document.getElementById('movesInfo');
+const howCard=document.getElementById('howCard');
+const gameOver=document.getElementById('gameOver');
+const resultTitle=document.getElementById('resultTitle');
+const resultDesc=document.getElementById('resultDesc');
+const againBtn=document.getElementById('againBtn');
+const bonusBtn=document.getElementById('bonusBtn');
+const freezePanel=document.getElementById('freezePanel');
+const freezeBtn=document.getElementById('freezeBtn');
+
+againBtn.addEventListener('click', ()=>{ gameOver.classList.add('hidden'); startGame(); });
+bonusBtn.addEventListener('click', ()=>{
+  bonusBtn.disabled=true;
+  bonusBtn.textContent='Loading bonus...';
+  resultDesc.textContent='Preparing Lava Freeze...';
+  setTimeout(()=>{
+    hasFreezeNextGame=true;
+    gameOver.classList.add('hidden');
+    startGame();
+  },1200);
+});
+
+if(freezeBtn){
+  freezeBtn.addEventListener('click',()=>{
+    if(freezeActiveUntil>Date.now()) return;
+    freezeActiveUntil=Date.now()+30000;
+    freezeBtn.disabled=true;
+    const tick=()=>{
+      const remain=Math.max(0,Math.ceil((freezeActiveUntil-Date.now())/1000));
+      freezeBtn.textContent=remain>0?`Freeze: ${remain}s`:'Freeze ended';
+      if(remain<=0){
+        clearInterval(freezeTickHandle);
+        freezeTickHandle=null;
+        setTimeout(()=>freezePanel.classList.add('hidden'),600);
+      }
+    };
+    tick();
+    freezeTickHandle=setInterval(tick,2000);
   });
+}
 
-  if(freezeBtn){
-    freezeBtn.addEventListener('click',()=>{
-      if(freezeActiveUntil>Date.now()) return;
-      freezeActiveUntil=Date.now()+30000;
-      freezeBtn.disabled=true;
-      const tick=()=>{
-        const remain=Math.max(0,Math.ceil((freezeActiveUntil-Date.now())/1000));
-        freezeBtn.textContent=remain>0?`Freeze: ${remain}s`:'Freeze ended';
-        if(remain<=0){
-          clearInterval(freezeTickHandle);
-          freezeTickHandle=null;
-          setTimeout(()=>freezePanel.classList.add('hidden'),600);
-        }
-      };
-      tick();
-      freezeTickHandle=setInterval(tick,200);
-    });
-  }
-
-  // ===== Init
-  function setupBoardGrid(){
-    boardEl.style.setProperty('--size',SIZE);
-    boardEl.innerHTML='';
-    for(let y=0;y<SIZE;y++){
-      for(let x=0;x<SIZE;x++){
-        const d=document.createElement('div');
-        d.className='cell';
-        d.dataset.x=x; d.dataset.y=y;
-        d.addEventListener('click',onCellClick);
-        boardEl.appendChild(d);
-      }
+/* ===== Init ===== */
+function setupBoardGrid(){
+  boardEl.style.setProperty('--size',SIZE);
+  boardEl.innerHTML='<div id="lavaFX" aria-hidden="true"></div>';
+  for(let y=0;y<SIZE;y++){
+    for(let x=0;x<SIZE;x++){
+      const d=document.createElement('div');
+      d.className='cell';
+      d.dataset.x=x; d.dataset.y=y;
+      d.innerHTML = '<span class="mark" aria-hidden="true"></span>';
+      d.addEventListener('click',onCellClick);
+      boardEl.appendChild(d);
     }
   }
-  function startGame(){ initState(); }
+}
+function startGame(){ initState(); }
 
-  function initState(){
-    grid=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
-    previewThisGame=previewNextGame; previewNextGame=false;
-    shrinkInterval=BASE_SHRINK_INTERVAL;
-    turnsUntilShrink=shrinkInterval;
-    playerTurn=true; gameActive=true;
-    selected=null; movesCount=0; startTs=null; winningLine=null;
-    stopTimer(); timeInfoEl.textContent='Time: 00:00'; movesInfoEl.textContent='Moves: 0';
-    hudEl.classList.remove('hidden');
-    nextFall=pickNextFallTile();
-    freezeActiveUntil=0;
-    if(hasFreezeNextGame){
-      hasFreezeNextGame=false;
-      freezePanel.classList.remove('hidden');
-      freezeBtn.disabled=false;
-      freezeBtn.textContent='Activate (30 sec)';
-    } else {
-      freezePanel.classList.add('hidden');
-    }
-    updateHUD();
-    renderAll();
+/* === Soft lava flares === */
+function startLavaFlares(){
+  const fx = document.getElementById('lavaFX');
+  if(!fx) return;
+  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MAX_FLARES = 10;
+  let live = 0, tHandle = null;
+  const rand = (a,b)=> a + Math.random()*(b-a);
+  function spawn(){
+    if(document.hidden){ schedule(800); return; }
+    if(live >= MAX_FLARES){ schedule(250); return; }
+    const el = document.createElement('div');
+    el.className = 'flare';
+    const x = rand(5,95), y = rand(8,92);
+    el.style.left = x + '%'; el.style.top  = y + '%';
+    const base = Math.min(fx.clientWidth, fx.clientHeight);
+    const sizePct = rand(16,32);
+    const px = Math.round(base * sizePct / 100);
+    el.style.width = el.style.height = px + 'px';
+    el.style.filter = `hue-rotate(${rand(-6,6)}deg)`;
+    el.style.animationDuration = (REDUCED ? rand(1.8,2.6) : rand(3.2,5.2)) + 's';
+    live++;
+    el.addEventListener('animationend', ()=>{ el.remove(); live--; }, {once:true});
+    fx.appendChild(el);
+    schedule(REDUCED ? rand(1200,2200) : rand(450,1200));
   }
+  const schedule = ms => { clearTimeout(tHandle); tHandle=setTimeout(spawn, ms); };
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) clearTimeout(tHandle); else schedule(400); });
+  schedule(500);
+}
 
-  function inBounds(x,y){return x>=0&&x<SIZE&&y>=0&&y<SIZE;}
-  function pickNextFallTile(){
-    const c=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]!==VOID)c.push({x,y});
-    if(!c.length)return null;return c[Math.floor(Math.random()*c.length)];
+/* ===== Helpers ===== */
+function setMark(el, who) {
+  const mark = el.querySelector('.mark');
+  if (!mark) return;
+  if (who === PLAYER) {
+    mark.innerHTML = `
+      <svg viewBox="0 0 100 100" class="mark-svg" aria-hidden="true">
+        <path d="M20 20 L80 80 M80 20 L20 80"
+              stroke="#ff6a00" stroke-width="12" stroke-linecap="round" fill="none"/>
+      </svg>`;
+  } else if (who === AI) {
+    mark.innerHTML = `
+      <svg viewBox="0 0 100 100" class="mark-svg" aria-hidden="true">
+        <circle cx="50" cy="50" r="32"
+                stroke="#ffaa00" stroke-width="12" fill="none"/>
+      </svg>`;
+  } else {
+    mark.innerHTML = '';
   }
-  function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return(m<10?'0':'')+m+':' +(r<10?'0':'')+r;}
-  function startTimer(){if(timerHandle)return;startTs=Date.now();timerHandle=setInterval(()=>{timeInfoEl.textContent='Time: '+formatTime(Date.now()-startTs);},250);}
-  function stopTimer(){if(timerHandle){clearInterval(timerHandle);timerHandle=null;}}
+}
 
-  // === FIX: render nepřepisuje celé className, zachová .falling
-  function renderAll(){
-    const cells=boardEl.children;
-    for(let y=0;y<SIZE;y++){
-      for(let x=0;x<SIZE;x++){
-        const idx=y*SIZE+x, el=cells[idx], v=grid[y][x];
-
-        const isFalling = el.classList.contains('falling');
-
-        // vyčisti stavové třídy (ale nesahej na .falling)
-        el.classList.remove('void','x','o','selected','willFall','win');
-
-        if(v===VOID){ el.classList.add('void'); el.textContent=''; }
-        else if(v===PLAYER){ el.classList.add('x'); el.textContent='✕'; }
-        else if(v===AI){ el.classList.add('o'); el.textContent='⭘'; }
-        else{ el.textContent=''; }
-
-        if(!isFalling && previewThisGame && nextFall && nextFall.x===x && nextFall.y===y && v!==VOID){
-          el.classList.add('willFall');
-        }
-        if(selected && selected.x===x && selected.y===y) el.classList.add('selected');
-      }
-    }
-  }
-
-  function updateHUD(){
-    turnInfoEl.textContent='Turn: '+(playerTurn?'you':'bot');
-    movesInfoEl.textContent='Moves: '+movesCount;
-  }
-
-  function onCellClick(e){
-    if(!gameActive||!playerTurn)return;
-    const x=+e.currentTarget.dataset.x,y=+e.currentTarget.dataset.y;
-    if(!inBounds(x,y)||grid[y][x]!==0)return;
-    if(howCard&&!howCard.classList.contains('hidden'))howCard.classList.add('hidden');
-    if(!selected||selected.x!==x||selected.y!==y){selected={x,y};renderAll();return;}
-    place(x,y,PLAYER);movesCount++;updateHUD();if(movesCount===1)startTimer();selected=null;
-    if(checkWin(PLAYER)){endGame(true);return;}
-    advanceShrink();if(!gameActive)return;
-    playerTurn=false;updateHUD();
-    setTimeout(()=>{aiMove();if(gameActive){advanceShrink();playerTurn=true;updateHUD();}},120);
-  }
-  function place(x,y,who){grid[y][x]=who;renderAll();}
-
-  function advanceShrink(){
-    turnsUntilShrink--;renderAll();
-    if(turnsUntilShrink<=0){performFall();turnsUntilShrink=shrinkInterval;}
-  }
-
-  // === FIX: spolehlivý start/doběh animace + změna stavu až po ní
-  function performFall(){
-    if (Date.now() < freezeActiveUntil) { nextFall = pickNextFallTile(); return; }
-    if (!nextFall) return;
-
-    const {x,y} = nextFall;
-    if (!inBounds(x,y)) { nextFall = pickNextFallTile(); return; }
-
-    const idx = y*SIZE + x;
-    const el  = boardEl.children[idx];
-    if (!el) return;
-
-    // odeber telegraph na padající buňce a restartuj animaci
-    el.classList.remove('willFall','falling');
-    void el.offsetWidth; // reflow pro restart animace
-    el.classList.add('falling');
-
-    setTimeout(()=>{
-      el.classList.remove('falling');
-      grid[y][x] = VOID;
-      renderAll();
-      nextFall = pickNextFallTile();
-      renderAll();
-    }, 1000);
-  }
-
-  function checkWin(who){
-    const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-    for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
-      if(grid[y][x]!==who)continue;
-      for(const[dx,dy]of dirs){
-        let cells=[{x,y}],i=1;
-        while(cells.length<WIN){const nx=x+dx*i,ny=y+dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cells.push({x:nx,y:ny});i++;}
-        if(cells.length>=WIN){winningLine=cells;return true;}
-      }
-    }
-    for(let yy=0;yy<SIZE;yy++){for(let xx=0;xx<SIZE;xx++){if(grid[yy][xx]===0)return false;}}
-    return true;
-  }
-
-  function endGame(playerWon){
-    gameActive=false;stopTimer();
-    if(freezeTickHandle){clearInterval(freezeTickHandle);freezeTickHandle=null;}
+function initState(){
+  grid=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
+  previewThisGame=previewNextGame; previewNextGame=false;
+  shrinkInterval=BASE_SHRINK_INTERVAL;
+  turnsUntilShrink=shrinkInterval;
+  playerTurn=true; gameActive=true;
+  selected=null; movesCount=0; startTs=null; winningLine=null;
+  stopTimer(); timeInfoEl.textContent='Time: 00:00'; movesInfoEl.textContent='Moves: 0';
+  hudEl.classList.remove('hidden');
+  nextFall=pickNextFallTile();
+  freezeActiveUntil=0;
+  if(hasFreezeNextGame){
+    hasFreezeNextGame=false;
+    freezePanel.classList.remove('hidden');
+    freezeBtn.disabled=false;
+    freezeBtn.textContent='Activate (30 sec)';
+  } else {
     freezePanel.classList.add('hidden');
-    if(winningLine&&winningLine.length){
-      const cells=boardEl.children;
-      for(const{x,y}of winningLine){cells[y*SIZE+x].classList.add('win');}
-    }
+  }
+  updateHUD();
+  renderAll();
+  resizeBoardPixelPerfect();
+}
 
-    setTimeout(()=>{
-      gameOver.classList.remove('hidden');
-      bonusBtn.disabled=false;
-      againBtn.textContent='Play again';
-      if(playerWon===true){
-        bonusBtn.classList.add('hidden');
-        resultTitle.textContent='YOU WIN!';
-        const total=startTs?formatTime(Date.now()-startTs):'00:00';
-        resultDesc.textContent=`Time: ${total} • Moves: ${movesCount}`;
-      }else if(playerWon===false){
-        bonusBtn.classList.remove('hidden');
-        bonusBtn.textContent='Get Bonus: Lava Freeze';
-        resultTitle.textContent='YOU LOSE!';
-        resultDesc.textContent='Get your bonus! Lava Freeze stops all falling tiles for 30 seconds. Only in your next game.';
-      }else{
-        bonusBtn.classList.add('hidden');
-        resultTitle.textContent='Draw';
-        resultDesc.textContent=`Moves: ${movesCount}`;
+function inBounds(x,y){return x>=0&&x<SIZE&&y>=0&&y<SIZE;}
+function pickNextFallTile(){
+  const c=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(grid[y][x]!==VOID)c.push({x,y});
+  if(!c.length)return null;return c[Math.floor(Math.random()*c.length)];
+}
+function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return(m<10?'0':'')+m+':' +(r<10?'0':'')+r;}
+function startTimer(){if(timerHandle)return;startTs=Date.now();timerHandle=setInterval(()=>{timeInfoEl.textContent='Time: '+formatTime(Date.now()-startTs);},250);}
+function stopTimer(){if(timerHandle){clearInterval(timerHandle);timerHandle=null;}}
+
+function renderAll(){
+  const cells = boardEl.querySelectorAll('.cell');
+  for(let y=0;y<SIZE;y++){
+    for(let x=0;x<SIZE;x++){
+      const idx=y*SIZE+x, el=cells[idx], v=grid[y][x];
+      const isFalling = el.classList.contains('falling');
+
+      el.classList.remove('void','x','o','selected','willFall');
+// drž výherní okraj po celou dobu do popupu
+const isWinning = winningLine && winningLine.some(p => p.x===x && p.y===y);
+if (isWinning) el.classList.add('win'); else el.classList.remove('win');
+
+
+      if(v===VOID){ el.classList.add('void'); setMark(el, null); }
+      else if(v===PLAYER){ el.classList.add('x'); setMark(el, PLAYER); }
+      else if(v===AI){ el.classList.add('o'); setMark(el, AI); }
+      else{ setMark(el, null); }
+
+      if(!isFalling && previewThisGame && nextFall && nextFall.x===x && nextFall.y===y && v!==VOID){
+        el.classList.add('willFall');
       }
-    },2000);
-  }
-
-  function aiMove(){
-    const move=pickBestMove();
-    if(!move){endGame(null);return;}
-    place(move.x,move.y,AI);
-    const idx=move.y*SIZE+move.x;
-    const el=boardEl.children[idx];
-    el.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.25)',opacity:.8},{transform:'scale(1)',opacity:1}],{duration:300,easing:'ease-out'});
-    if(checkWin(AI)){endGame(false);}
-  }
-
-  function pickBestMove(){
-    let best=null,bestScore=-Infinity;
-    for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
-      if(grid[y][x]!==0)continue;
-      const aiLen=projectedLineLen(x,y,AI),plLen=projectedLineLen(x,y,PLAYER);
-      const centerBonus=-(Math.abs((SIZE-1)/2-x)+Math.abs((SIZE-1)/2-y))*0.03;
-      const dangerPenalty=(previewThisGame&&nextFall&&nextFall.x===x&&nextFall.y===y&&turnsUntilShrink<=1)?-5:0;
-      const score=aiLen*2.2+plLen*2.0+centerBonus+dangerPenalty;
-      if(score>bestScore){bestScore=score;best={x,y};}
+      if(selected && selected.x===x && selected.y===y) el.classList.add('selected');
     }
-    return best;
   }
-  function projectedLineLen(x,y,who){
-    let maxLen=1;const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-    for(const[dx,dy]of dirs){
-      let cnt=1,i=1;while(true){const nx=x+dx*i,ny=y+dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cnt++;i++;}
-      i=1;while(true){const nx=x-dx*i,ny=y-dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cnt++;i++;}
-      if(cnt>maxLen)maxLen=cnt;
+}
+
+function updateHUD(){
+  turnInfoEl.textContent='Turn: '+(playerTurn?'you':'bot');
+  movesInfoEl.textContent='Moves: '+movesCount;
+}
+
+/* ===== Win / Stalemate ===== */
+function checkWin(who){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(let y=0;y<SIZE;y++){
+    for(let x=0;x<SIZE;x++){
+      if(grid[y][x]!==who) continue;
+      for(const[dx,dy] of dirs){
+        let cells=[{x,y}], i=1;
+        while(cells.length<WIN){
+          const nx=x+dx*i, ny=y+dy*i;
+          if(!inBounds(nx,ny) || grid[ny][nx]!==who) break;
+          cells.push({x:nx,y:ny}); i++;
+        }
+        if(cells.length>=WIN){ winningLine=cells; return true; }
+      }
     }
-    return maxLen;
+  }
+  return false;
+}
+
+// True = no 5-in-a-row is possible for X or O anymore (considering VOID as broken)
+function isStalemate(){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(let y=0;y<SIZE;y++){
+    for(let x=0;x<SIZE;x++){
+      for(const[dx,dy] of dirs){
+        const endX = x + dx*(WIN-1), endY = y + dy*(WIN-1);
+        if(!inBounds(endX,endY)) continue;
+
+        let valid=true, seenP=false, seenA=false;
+        for(let k=0;k<WIN;k++){
+          const nx=x+dx*k, ny=y+dy*k, v=grid[ny][nx];
+          if(v===VOID){ valid=false; break; }
+          if(v===PLAYER) seenP=true;
+          else if(v===AI) seenA=true;
+        }
+        if(!valid) continue;
+        if(!(seenP && seenA)) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function endStalemate(){
+  if(!gameActive) return;
+  gameActive=false;
+  stopTimer();
+  if(freezeTickHandle){clearInterval(freezeTickHandle);freezeTickHandle=null;}
+  freezePanel.classList.add('hidden');
+
+  winningLine=null;
+
+  setTimeout(()=>{
+    gameOver.classList.remove('hidden');
+    bonusBtn.disabled=false;
+    bonusBtn.classList.remove('hidden');
+    bonusBtn.textContent='Get Bonus: Lava Freeze';
+    againBtn.textContent='Play again';
+    resultTitle.textContent='No winner - Lava took over';
+    resultDesc.textContent='There is no five-in-a-row left for X or O.';
+  }, 300);
+}
+
+/* ===== Turns ===== */
+function onCellClick(e){
+  if(!gameActive||!playerTurn) return;
+  const x=+e.currentTarget.dataset.x,y=+e.currentTarget.dataset.y;
+  if(!inBounds(x,y)||grid[y][x]!==0) return;
+
+  if(howCard&&!howCard.classList.contains('hidden')) howCard.classList.add('hidden');
+
+  if(!selected||selected.x!==x||selected.y!==y){ selected={x,y}; renderAll(); return; }
+
+  // Confirm place
+  place(x,y,PLAYER); movesCount++; updateHUD(); if(movesCount===1) startTimer(); selected=null;
+
+  // Win?
+  if(checkWin(PLAYER)){ endGame(true); return; }
+
+  // Stalemate (no 5 possible)?
+  if(isStalemate()){ endStalemate(); return; }
+
+  // Lava timing
+  advanceShrink(); if(!gameActive) return;
+
+  // After possible fall, check stalemate again if still active
+  if(gameActive && isStalemate()){ endStalemate(); return; }
+
+  // Bot turn
+  playerTurn=false; updateHUD();
+  setTimeout(()=>{
+    aiMove();
+    if(gameActive){
+      advanceShrink();
+      if(gameActive && isStalemate()){ endStalemate(); return; }
+      playerTurn=true; updateHUD();
+    }
+  },120);
+}
+
+function place(x,y,who){ grid[y][x]=who; renderAll(); }
+
+function advanceShrink(){
+  turnsUntilShrink--; renderAll();
+  if(turnsUntilShrink<=0){ performFall(); turnsUntilShrink=shrinkInterval; }
+}
+
+function performFall(){
+  if (Date.now() < freezeActiveUntil) { nextFall = pickNextFallTile(); renderAll(); return; }
+  if (!nextFall) return;
+
+  const {x,y} = nextFall;
+  if (!inBounds(x,y)) { nextFall = pickNextFallTile(); renderAll(); return; }
+
+  const idx = y*SIZE + x;
+  const el  = boardEl.querySelectorAll('.cell')[idx];
+  if (!el) return;
+
+  el.classList.remove('willFall','falling');
+  void el.offsetWidth; // restart animation
+  el.classList.add('falling');
+
+  setTimeout(()=>{
+    el.classList.remove('falling');
+    grid[y][x] = VOID;
+    renderAll();
+
+    if(gameActive && isStalemate()){ endStalemate(); return; }
+
+    nextFall = pickNextFallTile();
+    renderAll();
+  }, 1000);
+}
+
+/* ===== End ===== */
+function endGame(playerWon){
+  gameActive=false; stopTimer();
+  if(freezeTickHandle){clearInterval(freezeTickHandle);freezeTickHandle=null;}
+  freezePanel.classList.add('hidden');
+
+  if(winningLine&&winningLine.length){
+    const cells=boardEl.querySelectorAll('.cell');
+    for(const{x,y}of winningLine){cells[y*SIZE+x].classList.add('win');}
   }
 
-  setupBoardGrid();
-  startGame();
+  setTimeout(()=>{
+    gameOver.classList.remove('hidden');
+    bonusBtn.disabled=false;
+    againBtn.textContent='Play again';
+
+    if(playerWon===true){
+      bonusBtn.classList.add('hidden');
+      resultTitle.textContent='YOU WIN!';
+      const total=startTs?formatTime(Date.now()-startTs):'00:00';
+      resultDesc.textContent=`Time: ${total} • Moves: ${movesCount}`;
+    }else if(playerWon===false){
+      bonusBtn.classList.remove('hidden');
+      bonusBtn.textContent='Get Bonus: Lava Freeze';
+      resultTitle.textContent='YOU LOSE!';
+      resultDesc.textContent='Take your bonus. Lava Freeze stops falling tiles for 30 seconds in your next game.';
+    }else{
+      bonusBtn.classList.add('hidden');
+      resultTitle.textContent='No winner';
+      resultDesc.textContent=`Moves: ${movesCount}`;
+    }
+  }, 2000); // show popup after 2s
+}
+
+/* ===== Bot ===== */
+function aiMove(){
+  const move=pickBestMove();
+  if(!move){ endStalemate(); return; }
+  place(move.x,move.y,AI);
+
+  const idx=move.y*SIZE+move.x;
+  const el=boardEl.querySelectorAll('.cell')[idx];
+  el.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.25)',opacity:.8},{transform:'scale(1)',opacity:1}],{duration:300,easing:'ease-out'});
+
+  if(checkWin(AI)){ endGame(false); return; }
+
+  if(isStalemate()){ endStalemate(); return; }
+}
+
+function pickBestMove(){
+  let best=null,bestScore=-Infinity;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
+    if(grid[y][x]!==0)continue;
+    const aiLen=projectedLineLen(x,y,AI),plLen=projectedLineLen(x,y,PLAYER);
+    const centerBonus=-(Math.abs((SIZE-1)/2-x)+Math.abs((SIZE-1)/2-y))*0.03;
+    const dangerPenalty=(previewThisGame&&nextFall&&nextFall.x===x&&nextFall.y===y&&turnsUntilShrink<=1)?-5:0;
+    const score=aiLen*2.2+plLen*2.0+centerBonus+dangerPenalty;
+    if(score>bestScore){bestScore=score;best={x,y};}
+  }
+  return best;
+}
+function projectedLineLen(x,y,who){
+  let maxLen=1;const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(const[dx,dy]of dirs){
+    let cnt=1,i=1;while(true){const nx=x+dx*i,ny=y+dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cnt++;i++;}
+    i=1;while(true){const nx=x-dx*i,ny=y-dy*i;if(!inBounds(nx,ny)||grid[ny][nx]!==who)break;cnt++;i++;}
+    if(cnt>maxLen)maxLen=cnt;
+  }
+  return maxLen;
+}
+
+/* ===== Boot ===== */
+setupBoardGrid();
+resizeBoardPixelPerfect();
+startGame();
+startLavaFlares();
 </script>
 </body>
 </html>
