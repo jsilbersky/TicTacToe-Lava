@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#0b0f1a" />
   <meta name="format-detection" content="telephone=no" />
 
-  <!-- Security: strict, inline allowed for this single-file app -->
+  <!-- Security: strict, but allow Google Fonts -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     img-src 'self' data: blob:;
-    style-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     script-src 'self' 'unsafe-inline';
-    font-src 'self' data:;
+    font-src 'self' data: https://fonts.gstatic.com;
     connect-src 'self';
     media-src 'none';
     object-src 'none';
@@ -24,7 +24,12 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), interest-cohort=()">
 
-  <title>Tic-Tac Rush – Mobile</title>
+  <title>TicTacToe Lava – Mobile</title>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
   :root{
@@ -33,195 +38,145 @@
   }
   *{box-sizing:border-box}
 
-  body {
-    margin: 0;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    overflow: hidden;
-    touch-action: manipulation;
-    background: url("lava.webp") center center / cover no-repeat;
-    color: var(--text);
-    font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial;
-    -webkit-tap-highlight-color: transparent;
+  body{
+    margin:0; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    overflow:hidden; touch-action:manipulation;
+    background:url("lava.webp") center center / cover no-repeat;
+    color:var(--text); font-family:"Kanit",system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial;
+    -webkit-tap-highlight-color:transparent;
   }
 
-  .wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: 16vh;
-    position: relative;
-    z-index: 1;
+  .wrap{
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:10px;
+    margin-top:16vh; position:relative; z-index:1;
   }
 
   #hud{
     display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;
-    background:rgba(18,24,42,.9);
-    padding:8px 10px; border-radius:12px;
-    box-shadow:0 6px 20px rgba(0,0,0,.25);
-    font-weight:600; min-height:38px;
+    background:rgba(18,24,42,.9); padding:8px 10px; border-radius:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,.25); font-weight:700; min-height:38px;
   }
-  #hud .badge{ padding:5px 9px; border-radius:999px; background:#202846; font-weight:700; font-size:.85rem; }
+  #hud .badge{ padding:5px 9px; border-radius:999px; background:#202846; font-size:.9rem; }
 
-  #board {
-    width: min(96vw, 520px);
-    aspect-ratio: 1 / 1;
-    display: grid;
-    grid-template-columns: repeat(var(--size, 11), var(--cell, 1fr));
-    grid-template-rows:    repeat(var(--size, 11), var(--cell, 1fr));
-    gap: 2px;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-    position: relative;
-    overflow: visible;
-    z-index: 1;
-    justify-content: center;
-    align-content:   center;
-    margin-inline: auto;
+  #board{
+    width:min(96vw,520px); aspect-ratio:1/1; display:grid;
+    grid-template-columns:repeat(var(--size,11),var(--cell,1fr));
+    grid-template-rows:   repeat(var(--size,11),var(--cell,1fr));
+    gap:2px; background:transparent; border-radius:0; box-shadow:none; position:relative; overflow:visible; z-index:1;
+    justify-content:center; align-content:center; margin-inline:auto;
   }
 
   #board #lavaFX{
-    position: absolute;
-    inset: 0;
-    border-radius: 0;
-    pointer-events: none;
-    z-index: 0;
-    mix-blend-mode: screen;
-    filter: blur(26px) saturate(1.08);
-    opacity: .55;
+    position:absolute; inset:0; pointer-events:none; z-index:0;
+    mix-blend-mode:screen; filter:blur(26px) saturate(1.08); opacity:.55;
   }
-  #board #lavaFX .flare {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 180px;
-    height: 180px;
-    transform: translate(-50%, -50%) scale(0.8);
-    border-radius: 50%;
-    pointer-events: none;
-    will-change: transform, opacity, filter;
-    background: radial-gradient(circle at 50% 42%,
-      rgba(255, 195, 90, .95) 0%,
-      rgba(255, 140, 40, .80) 35%,
-      rgba(255, 70, 10, .45) 60%,
-      rgba(255, 70, 10, 0) 82%);
-    animation: flareLife 4.4s ease-out forwards;
+  #board #lavaFX .flare{
+    position:absolute; left:50%; top:50%; width:180px; height:180px;
+    transform:translate(-50%,-50%) scale(.8); border-radius:50%; pointer-events:none; will-change:transform,opacity,filter;
+    background:radial-gradient(circle at 50% 42%, rgba(255,195,90,.95) 0%, rgba(255,140,40,.8) 35%, rgba(255,70,10,.45) 60%, rgba(255,70,10,0) 82%);
+    animation:flareLife 4.4s ease-out forwards;
   }
-  @keyframes flareLife {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); filter: brightness(1); }
-    18% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05); filter: brightness(1.25); }
-    55% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); filter: brightness(1.1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); filter: brightness(.9); }
+  @keyframes flareLife{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(.7); filter:brightness(1)}
+    18%{opacity:.95; transform:translate(-50%,-50%) scale(1.05); filter:brightness(1.25)}
+    55%{opacity:.75; transform:translate(-50%,-50%) scale(1); filter:brightness(1.1)}
+    100%{opacity:0; transform:translate(-50%,-50%) scale(1.25); filter:brightness(.9)}
   }
-  @media (prefers-reduced-motion: reduce){
-    #board #lavaFX .flare{ animation-duration:2.2s; }
-  }
+  @media (prefers-reduced-motion:reduce){ #board #lavaFX .flare{ animation-duration:2.2s } }
 
   .cell{
-    width:100%; height:100%;
-    background:url("tile.webp") center / 100% 100% no-repeat;
-    border-radius:10px;
-    display:grid; place-items:center;
-    font-weight:800; font-size:clamp(12px,3.2vw,22px);
-    color:#111827; user-select:none; cursor:pointer;
+    width:100%; height:100%; background:url("tile.webp") center / 100% 100% no-repeat; border-radius:10px;
+    display:grid; place-items:center; font-weight:800; font-size:clamp(12px,3.2vw,22px); color:#111827; user-select:none; cursor:pointer;
     transition:filter .2s ease, background .2s ease, opacity .4s ease, box-shadow .2s ease;
-    position:relative; overflow:hidden; z-index:1;
-    box-shadow:inset 0 0 6px rgba(0,0,0,0.6);
+    position:relative; overflow:hidden; z-index:1; box-shadow:inset 0 0 6px rgba(0,0,0,.6);
   }
-  .cell::after{
-    content:""; position:absolute; inset:0;
-    background: radial-gradient(circle at center, rgba(255,100,0,0.15), transparent 70%);
-    opacity:0; transition:opacity .3s ease;
-  }
+  .cell::after{ content:""; position:absolute; inset:0; background:radial-gradient(circle at center, rgba(255,100,0,.15), transparent 70%); opacity:0; transition:opacity .3s ease; }
   .cell.x::after, .cell.o::after{ opacity:1; }
 
   .cell .mark{ width:70%; height:70%; display:block; }
   .cell .mark-svg{ width:100%; height:100%; display:block; }
-  .cell.x .mark-svg{ filter: drop-shadow(0 0 8px rgba(255,106,0,.6)) drop-shadow(0 0 16px rgba(255,69,0,.35)); }
-  .cell.o .mark-svg{ filter: drop-shadow(0 0 8px rgba(255,187,51,.55)) drop-shadow(0 0 16px rgba(255,136,0,.30)); }
+  .cell.x .mark-svg{ filter:drop-shadow(0 0 8px rgba(255,106,0,.6)) drop-shadow(0 0 16px rgba(255,69,0,.35)); }
+  .cell.o .mark-svg{ filter:drop-shadow(0 0 8px rgba(255,187,51,.55)) drop-shadow(0 0 16px rgba(255,136,0,.3)); }
 
   .cell:hover{ filter:brightness(.96); }
   .cell.void{ background:transparent; color:transparent; cursor:not-allowed; box-shadow:none; }
   .cell.selected{ box-shadow:0 0 0 3px var(--accent2) inset, 0 0 0 2px var(--accent2); }
 
-  .cell.x{
-    color:#ff6a00; font-weight:900;
-    text-shadow:0 0 8px #ff6a00, 0 0 16px #ff4500, 0 0 28px rgba(255,100,0,0.6);
-  }
-  .cell.o{
-    color:#ffaa00; font-weight:900;
-    text-shadow:0 0 8px #ffbb33, 0 0 16px #ff8800, 0 0 28px rgba(255,120,0,0.5);
-  }
+  .cell.x{ color:#ff6a00; font-weight:900; text-shadow:0 0 8px #ff6a00, 0 0 16px #ff4500, 0 0 28px rgba(255,100,0,.6); }
+  .cell.o{ color:#ffaa00; font-weight:900; text-shadow:0 0 8px #ffbb33, 0 0 16px #ff8800, 0 0 28px rgba(255,120,0,.5); }
 
-  /* WIN HIGHLIGHT: strong green border, no fill */
-.cell.win{
-  border:5px solid #14e06e;
-  box-shadow:0 0 14px 3px rgba(20,224,110,.45);
-}
+  /* WIN HIGHLIGHT */
+  .cell.win{ border:5px solid #14e06e; box-shadow:0 0 14px 3px rgba(20,224,110,.45); }
 
   .cell.willFall{ outline:2px dashed var(--accent2); animation:willPulse 1s ease-in-out infinite; }
-  @keyframes willPulse{
-    0%{ box-shadow:0 0 0 0 rgba(255,184,107,.6); }
-    70%{ box-shadow:0 0 0 10px rgba(255,184,107,0); }
-    100%{ box-shadow:0 0 0 0 rgba(255,184,107,0); }
-  }
+  @keyframes willPulse{ 0%{box-shadow:0 0 0 0 rgba(255,184,107,.6)} 70%{box-shadow:0 0 0 10px rgba(255,184,107,0)} 100%{box-shadow:0 0 0 0 rgba(255,184,107,0)} }
 
   @keyframes lava-fall{
-    0%{ background:var(--grid); opacity:1; box-shadow:none; }
-    30%{ background:#ff9f4a; opacity:1; box-shadow:0 0 14px 6px rgba(255,120,0,0.6); }
-    60%{ background:#ff7b00; opacity:.85; box-shadow:0 0 20px 10px rgba(255,80,0,0.4); }
-    100%{ background:transparent; opacity:0; box-shadow:none; }
+    0%{background:var(--grid); opacity:1; box-shadow:none}
+    30%{background:#ff9f4a; opacity:1; box-shadow:0 0 14px 6px rgba(255,120,0,.6)}
+    60%{background:#ff7b00; opacity:.85; box-shadow:0 0 20px 10px rgba(255,80,0,.4)}
+    100%{background:transparent; opacity:0; box-shadow:none}
   }
   .cell.falling{ animation:lava-fall .8s ease-in-out forwards; }
   .cell.falling::before{
     content:""; position:absolute; inset:-20%;
-    background: radial-gradient(circle at 50% 40%,
-      rgba(255,180,80,0.95) 0%, rgba(255,100,0,0.85) 35%,
-      rgba(255,30,0,0.6) 60%, rgba(0,0,0,0) 70%);
-    filter:blur(6px); border-radius:50%;
-    transform:scale(0.7); opacity:0; mix-blend-mode:screen;
-    animation: lava-core 1.1s ease-out forwards;
+    background:radial-gradient(circle at 50% 40%, rgba(255,180,80,.95) 0%, rgba(255,100,0,.85) 35%, rgba(255,30,0,.6) 60%, rgba(0,0,0,0) 70%);
+    filter:blur(6px); border-radius:50%; transform:scale(.7); opacity:0; mix-blend-mode:screen; animation:lava-core 1.1s ease-out forwards;
   }
-  .cell.falling::after{
-    content:""; position:absolute; inset:0; border-radius:inherit;
-    box-shadow:0 0 0 0 rgba(255,90,0,0.55), 0 0 25px rgba(255,80,0,0.6) inset;
-    opacity:.9; animation: lava-ring .9s ease-out forwards;
-  }
+  .cell.falling::after{ content:""; position:absolute; inset:0; border-radius:inherit; box-shadow:0 0 0 0 rgba(255,90,0,.55), 0 0 25px rgba(255,80,0,.6) inset; opacity:.9; animation:lava-ring .9s ease-out forwards; }
   @keyframes lava-core{ 0%{transform:scale(.7);opacity:0} 30%{transform:scale(1.05);opacity:1} 100%{transform:scale(.8);opacity:0} }
   @keyframes lava-ring{ 0%{box-shadow:0 0 0 0 rgba(255,90,0,.55);opacity:.9} 70%{box-shadow:0 0 0 16px rgba(255,90,0,0);opacity:.4} 100%{box-shadow:0 0 0 22px rgba(255,90,0,0);opacity:0} }
 
   .card{
-    width:min(96svw,520px); background:var(--panel); border-radius:14px;
-    padding:12px 14px; text-align:left;
+    width:min(96svw,520px); background:var(--panel); border-radius:14px; padding:12px 14px; text-align:left;
     box-shadow:0 8px 24px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06);
   }
   .small{ font-size:.95rem; opacity:.9; }
 
-  .overlay{
-    position:fixed; inset:0; display:grid; place-items:center;
-    background:rgba(5,8,14,.65); backdrop-filter:blur(3px); z-index:1000;
-  }
-  .popup{
-    width:min(92svw,520px); background:var(--panel); border-radius:16px; padding:18px; text-align:center;
+  .overlay{ position:fixed; inset:0; display:grid; place-items:center; background:rgba(5,8,14,.65); backdrop-filter:blur(3px); z-index:1000; }
+  .popup{ width:min(92svw,520px); background:var(--panel); border-radius:16px; padding:18px; text-align:center;
     box-shadow:0 10px 30px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.06);
   }
-  h1{ margin:6px 0 10px; font-size:clamp(20px,4.2svw,28px); }
+
+  h1{ margin:6px 0 10px; font-size:clamp(22px,8svw,32px); font-weight:800; letter-spacing:.5px; text-shadow:0 0 12px rgba(255,140,40,.35); }
+
   .row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
-  button{ background:linear-gradient(180deg,#5f70ff,#4758f0); color:#fff; border:0; border-radius:12px; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 8px 18px rgba(95,112,255,.35); }
-  .btn-ghost{ background:#222a45; box-shadow:none; }
+
+  button{ border:0; border-radius:14px; padding:12px 16px; font-weight:800; cursor:pointer; color:#fff; }
+
+  .stack{ display:flex; flex-direction:column; gap:12px; align-items:center; margin-top:8px; }
+
+  .lvl-btn{
+    width:min(92vw,260px);
+    padding:14px 16px;
+    font-size:1rem;
+    border-radius:14px;
+    display:flex; gap:10px; align-items:center; justify-content:center;
+    text-align:center;
+    box-shadow:0 8px 18px rgba(95,112,255,.35);
+  }
+  .lvl-btn span{ display:block; text-align:center; }
+  .lvl-btn strong{ display:block; font-size:1.05rem; line-height:1.1; }
+  .lvl-btn small{ display:block; opacity:.9; font-weight:600; }
+  .lvl-easy{   background:linear-gradient(180deg,#69d18a,#42b36d); box-shadow:0 8px 18px rgba(78,200,125,.35); }
+  .lvl-medium{ background:linear-gradient(180deg,#f0a54b,#e07a22); box-shadow:0 8px 18px rgba(230,130,45,.35); }
+  .lvl-hard{   background:linear-gradient(180deg,#ff7d4a,#ff4a24); box-shadow:0 8px 18px rgba(255,90,50,.35); }
+
+  .subhead{ font-weight:800; font-size:1rem; opacity:.9; margin:25px 0 5px; text-align:center; }
+  .how-box{ max-width:380px; margin:14px auto 0; }
+  .how-list{ list-style:disc inside; margin:8px 0 0; padding:0; text-align:left; font-size: 14px; }
+  .how-list li{ margin:6px 0; }
+
+  .big-btn{ width:100%; max-width:340px; margin-inline:auto; }
+  .btn-primary{ background:linear-gradient(180deg,#7c86ff,#5d6af3); box-shadow:0 8px 18px rgba(100,110,255,.35); }
+  .btn-secondary{ background:#222a45; box-shadow:none; }
   .hidden{ display:none; }
 
-  /* Freeze panel */
   #freezeBtn{ background:linear-gradient(180deg,#5f70ff,#4758f0); color:#fff; border:0; border-radius:12px; padding:8px 12px; font-weight:800; cursor:pointer; box-shadow:0 6px 16px rgba(95,112,255,.35); }
   #freezeBtn:disabled{ opacity:.65; cursor:not-allowed }
   #freezePanel .hint{ opacity:.9; margin:6px 0 0 }
 </style>
+
 </head>
 
 <body>
@@ -235,18 +190,11 @@
     <div id="board"></div>
 
     <div class="info-slot">
-      <div class="card small" id="howCard">
-        <b>How to play</b>
-        <p style="margin-top:6px">
-          • Tap a tile to <b>select</b>. Tap again to <b>place</b>.<br>
-          • Make <b>5 in a row</b> (row / column / diagonal).<br>
-          • Some tiles <b>fall into lava</b> at random.<br>
-        </p>
-      </div>
+      <div class="card small hidden" id="howCard"></div>
 
       <div id="freezePanel" class="card small hidden">
         <b>Lava Freeze</b>
-        <p class="hint">Stop falling tiles for <b>30 seconds</b>. Use anytime in this game.</p>
+        <p class="hint">Stop falling tiles for <b>30 seconds</b>. Use any time in this game.</p>
         <div class="row" style="margin-top:8px">
           <button id="freezeBtn">Activate (30 sec)</button>
         </div>
@@ -254,13 +202,44 @@
     </div>
   </div>
 
+<!-- START OVERLAY: title + difficulty + how to play -->
+<div id="startOverlay" class="overlay">
+  <div class="popup">
+    <h1 style="
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+      font-size:clamp(24px,8vw,34px); font-weight:900; letter-spacing:1px; color:#cc4e00;">
+      <img src="logotictactoe.webp" alt="Logo"
+           style="width:68px; height:68px; border-radius:14px; box-shadow:0 0 20px rgba(255,100,0,0.6);">
+      <span>TicTacToe Lava</span>
+    </h1>
+
+    <div class="subhead">Choose level</div>
+    <div class="stack">
+      <button id="btnEasy" class="lvl-btn lvl-easy"><span><strong>Easy</strong><small>Slow lava</small></span></button>
+      <button id="btnMedium" class="lvl-btn lvl-medium"><span><strong>Medium</strong><small>Normal lava</small></span></button>
+      <button id="btnHard" class="lvl-btn lvl-hard"><span><strong>Hard</strong><small>Fast lava</small></span></button>
+    </div>
+
+    <div class="subhead">How to play</div>
+    <div class="how-box">
+      <ul class="how-list">
+        <li>Tap a free tile to place your mark.</li>
+        <li>Make <b>5 in a row</b> — across, down, or diagonally.</li>
+        <li>Some tiles can <b>fall into lava</b> and disappear.</li>
+        <li>You can change the level after a game.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
   <div id="gameOver" class="overlay hidden">
     <div class="popup">
       <h1 id="resultTitle">Game over</h1>
       <p id="resultDesc" class="small"></p>
-      <div class="row" style="flex-direction: column; gap: 16px;">
-        <button id="bonusBtn">Get Bonus: Lava Freeze</button>
-        <button id="againBtn" class="btn-ghost">Play again</button>
+      <div class="row" style="flex-direction: column; gap: 12px; margin-top:14px;">
+        <button id="bonusBtn" class="big-btn btn-primary">Get Bonus: Lava Freeze</button>
+        <button id="againBtn" class="big-btn btn-secondary">Play again</button>
+        <button id="changeLevelBtn" class="big-btn btn-secondary">Change level</button>
       </div>
     </div>
   </div>
@@ -268,10 +247,98 @@
 <script>
 'use strict';
 
+/* ========= Ad settings (Rewarded) ========= */
+const TEST_REWARDED_ID = 'ca-app-pub-3940256099942544/5224354917'; // official AdMob test rewarded
+const DEV_FAKE_WEB_REWARD = false; // set true only when testing in desktop browser
+
+// Unified ad bridge — hladké flow s preloadingem a fallbacky
+const Ad = (() => {
+  let loaded=false, loading=false, showing=false, lastLoadTs=0, waitTimer=null;
+
+  const LOAD_TIMEOUT = 10000; // safety timeout
+  function hasAndroidBridge(){
+    return typeof window.Android !== 'undefined' &&
+           typeof Android.loadRewarded === 'function' &&
+           typeof Android.showRewarded === 'function';
+  }
+
+  function ensureLoaded(){
+    if(showing || loaded || loading) return;
+    loading = true;
+    lastLoadTs = Date.now();
+
+    if(hasAndroidBridge()){
+      try {
+        Android.loadRewarded(TEST_REWARDED_ID);
+      } catch(e) { loading=false; }
+    } else if (DEV_FAKE_WEB_REWARD) {
+      setTimeout(()=>window.__ad.onRewardedLoaded(), 600);
+    } else {
+      // no bridge -> do nothing; necháme tlačítko spadnout na „Try again“
+      loading=false;
+    }
+
+    clearTimeout(waitTimer);
+    waitTimer = setTimeout(()=>{ loading=false; }, LOAD_TIMEOUT);
+  }
+
+  function show(){
+    if(!loaded){
+      ensureLoaded();
+      return false; // caller nastaví „Loading…“ a počká
+    }
+    showing = true;
+    try{
+      if(hasAndroidBridge()){
+        Android.showRewarded();
+      } else if (DEV_FAKE_WEB_REWARD){
+        setTimeout(()=>window.__ad.onRewardEarned(1,'test'), 1200);
+        setTimeout(()=>window.__ad.onAdDismissed(), 1400);
+      } else {
+        showing = false;
+        return false;
+      }
+      return true;
+    }catch(e){
+      showing=false; loaded=false;
+      return false;
+    }
+  }
+
+  // callbacks z native (jména přesně sedí s Kotlin bridgem níže)
+  window.__ad = {
+    onRewardedLoaded(){ loaded=true; loading=false; },
+    onRewardedFailedToLoad(msg){ loaded=false; loading=false; },
+    onAdShowed(){},
+    onAdFailedToShow(msg){ showing=false; loaded=false; },
+    onAdDismissed(){ showing=false; loaded=false; ensureLoaded(); }, // připrav další
+    onRewardEarned(amount,type){ grantBonus(); } // udělení bonusu -> nová hra s freeze
+  };
+
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) ensureLoaded(); });
+  window.addEventListener('online', ensureLoaded);
+
+  return {
+    ensureLoaded,
+    show,
+    isReady:()=>loaded,
+    isLoading:()=>loading
+  };
+})();
+
 /* ===== Config ===== */
 const SIZE = 11, WIN = 5;
 const PLAYER = 1, AI = 2, VOID = -1;
-const BASE_SHRINK_INTERVAL = 3;
+
+/* Difficulty = only lava speed */
+const DIFF = {
+  easy:   { baseShrink: 6 },
+  medium: { baseShrink: 4 },
+  hard:   { baseShrink: 2 },
+};
+
+/* One bot for all levels */
+const AI_PARAMS = { wAI: 2.2, wPL: 2.0, center: 0.03, danger: -5 };
 
 /* ---- Pixel-perfect board ---- */
 const BOARD_MAX_W = 520;
@@ -293,10 +360,13 @@ window.addEventListener('orientationchange', resizeBoardPixelPerfect);
 
 /* ===== State ===== */
 let grid=[], gameActive=false, playerTurn=true;
-let shrinkInterval=BASE_SHRINK_INTERVAL, turnsUntilShrink=BASE_SHRINK_INTERVAL;
+let baseShrinkInterval = DIFF.medium.baseShrink;
+let shrinkInterval=baseShrinkInterval, turnsUntilShrink=baseShrinkInterval;
 let nextFall=null, previewNextGame=false, previewThisGame=false;
 let selected=null, movesCount=0, startTs=null, timerHandle=null, winningLine=null;
 let hasFreezeNextGame=false, freezeActiveUntil=0, freezeTickHandle=null;
+let difficulty = 'medium';
+let aiParams = AI_PARAMS;
 
 /* ===== DOM ===== */
 const boardEl=document.getElementById('board');
@@ -312,18 +382,53 @@ const againBtn=document.getElementById('againBtn');
 const bonusBtn=document.getElementById('bonusBtn');
 const freezePanel=document.getElementById('freezePanel');
 const freezeBtn=document.getElementById('freezeBtn');
+const startOverlay=document.getElementById('startOverlay');
+const btnEasy=document.getElementById('btnEasy');
+const btnMedium=document.getElementById('btnMedium');
+const btnHard=document.getElementById('btnHard');
+const changeLevelBtn=document.getElementById('changeLevelBtn');
 
+/* ===== Buttons ===== */
 againBtn.addEventListener('click', ()=>{ gameOver.classList.add('hidden'); startGame(); });
-bonusBtn.addEventListener('click', ()=>{
-  bonusBtn.disabled=true;
-  bonusBtn.textContent='Loading bonus...';
-  resultDesc.textContent='Preparing Lava Freeze...';
-  setTimeout(()=>{
-    hasFreezeNextGame=true;
-    gameOver.classList.add('hidden');
-    startGame();
-  },1200);
+changeLevelBtn.addEventListener('click', ()=>{ gameOver.classList.add('hidden'); showStartOverlay(); });
+
+bonusBtn.addEventListener('click', async ()=>{
+  // UX: disable + stavová zpráva
+  bonusBtn.disabled = true;
+  resultDesc.innerHTML = 'Preparing bonus…';
+  bonusBtn.textContent = Ad.isReady() ? 'Showing bonus…' : 'Loading bonus…';
+
+  // Zkus rovnou ukázat, pokud je ready
+  if(!Ad.show()){
+    // počkej krátce na load a pak show
+    let waited = 0;
+    const step = 200;
+    const max = 11000;
+    const t = setInterval(()=>{
+      waited += step;
+      if(Ad.isReady()){
+        clearInterval(t);
+        bonusBtn.textContent='Showing bonus…';
+        Ad.show(); // grantBonus() se zavolá až při onRewardEarned
+      } else if (waited >= max){
+        clearInterval(t);
+        bonusBtn.disabled=false;
+        bonusBtn.textContent='Try Bonus Again';
+        resultDesc.innerHTML = 'Ad not available right now. You can try again or just play again.';
+      }
+    }, step);
+  }
 });
+
+// BONUS udělení – volá se z __ad.onRewardEarned
+function grantBonus(){
+  hasFreezeNextGame = true;       // bonus platí pro příští hru
+  resultDesc.innerHTML = 'Bonus granted! Starting next game…';
+  setTimeout(()=>{
+    gameOver.classList.add('hidden');
+    startGame();                  // nová hra se zobrazí s Freeze panelem
+  }, 400);
+}
 
 if(freezeBtn){
   freezeBtn.addEventListener('click',()=>{
@@ -332,7 +437,7 @@ if(freezeBtn){
     freezeBtn.disabled=true;
     const tick=()=>{
       const remain=Math.max(0,Math.ceil((freezeActiveUntil-Date.now())/1000));
-      freezeBtn.textContent=remain>0?`Freeze: ${remain}s`:'Freeze ended';
+      freezeBtn.textContent= remain>0 ? `Freeze: ${remain}s` : 'Freeze ended';
       if(remain<=0){
         clearInterval(freezeTickHandle);
         freezeTickHandle=null;
@@ -342,6 +447,22 @@ if(freezeBtn){
     tick();
     freezeTickHandle=setInterval(tick,2000);
   });
+}
+
+/* ===== Start overlay logic ===== */
+btnEasy.addEventListener('click',   ()=> selectDifficulty('easy'));
+btnMedium.addEventListener('click', ()=> selectDifficulty('medium'));
+btnHard.addEventListener('click',   ()=> selectDifficulty('hard'));
+
+function showStartOverlay(){ startOverlay.classList.remove('hidden'); }
+function hideStartOverlay(){ startOverlay.classList.add('hidden'); }
+
+function selectDifficulty(mode){
+  difficulty = mode;
+  baseShrinkInterval = DIFF[mode].baseShrink;
+  aiParams = AI_PARAMS; // same bot
+  hideStartOverlay();
+  startGame();
 }
 
 /* ===== Init ===== */
@@ -359,7 +480,11 @@ function setupBoardGrid(){
     }
   }
 }
-function startGame(){ initState(); }
+function startGame(){ 
+  initState(); 
+  // Ujisti se, že rewarded je v zásobě pro případný další GameOver
+  Ad.ensureLoaded();
+}
 
 /* === Soft lava flares === */
 function startLavaFlares(){
@@ -416,7 +541,7 @@ function setMark(el, who) {
 function initState(){
   grid=Array.from({length:SIZE},()=>Array(SIZE).fill(0));
   previewThisGame=previewNextGame; previewNextGame=false;
-  shrinkInterval=BASE_SHRINK_INTERVAL;
+  shrinkInterval=baseShrinkInterval;
   turnsUntilShrink=shrinkInterval;
   playerTurn=true; gameActive=true;
   selected=null; movesCount=0; startTs=null; winningLine=null;
@@ -454,10 +579,8 @@ function renderAll(){
       const isFalling = el.classList.contains('falling');
 
       el.classList.remove('void','x','o','selected','willFall');
-// drž výherní okraj po celou dobu do popupu
-const isWinning = winningLine && winningLine.some(p => p.x===x && p.y===y);
-if (isWinning) el.classList.add('win'); else el.classList.remove('win');
-
+      const isWinning = winningLine && winningLine.some(p => p.x===x && p.y===y);
+      if (isWinning) el.classList.add('win'); else el.classList.remove('win');
 
       if(v===VOID){ el.classList.add('void'); setMark(el, null); }
       else if(v===PLAYER){ el.classList.add('x'); setMark(el, PLAYER); }
@@ -497,7 +620,6 @@ function checkWin(who){
   return false;
 }
 
-// True = no 5-in-a-row is possible for X or O anymore (considering VOID as broken)
 function isStalemate(){
   const dirs=[[1,0],[0,1],[1,1],[1,-1]];
   for(let y=0;y<SIZE;y++){
@@ -535,9 +657,9 @@ function endStalemate(){
     bonusBtn.disabled=false;
     bonusBtn.classList.remove('hidden');
     bonusBtn.textContent='Get Bonus: Lava Freeze';
-    againBtn.textContent='Play again';
-    resultTitle.textContent='No winner - Lava took over';
-    resultDesc.textContent='There is no five-in-a-row left for X or O.';
+    resultTitle.textContent='No winner';
+    resultDesc.textContent='No 5 in a row is possible now.';
+    Ad.ensureLoaded(); // pro další klik připraveno
   }, 300);
 }
 
@@ -557,13 +679,12 @@ function onCellClick(e){
   // Win?
   if(checkWin(PLAYER)){ endGame(true); return; }
 
-  // Stalemate (no 5 possible)?
+  // Stalemate?
   if(isStalemate()){ endStalemate(); return; }
 
   // Lava timing
   advanceShrink(); if(!gameActive) return;
 
-  // After possible fall, check stalemate again if still active
   if(gameActive && isStalemate()){ endStalemate(); return; }
 
   // Bot turn
@@ -597,7 +718,7 @@ function performFall(){
   if (!el) return;
 
   el.classList.remove('willFall','falling');
-  void el.offsetWidth; // restart animation
+  void el.offsetWidth;
   el.classList.add('falling');
 
   setTimeout(()=>{
@@ -626,7 +747,6 @@ function endGame(playerWon){
   setTimeout(()=>{
     gameOver.classList.remove('hidden');
     bonusBtn.disabled=false;
-    againBtn.textContent='Play again';
 
     if(playerWon===true){
       bonusBtn.classList.add('hidden');
@@ -637,13 +757,14 @@ function endGame(playerWon){
       bonusBtn.classList.remove('hidden');
       bonusBtn.textContent='Get Bonus: Lava Freeze';
       resultTitle.textContent='YOU LOSE!';
-      resultDesc.textContent='Take your bonus. Lava Freeze stops falling tiles for 30 seconds in your next game.';
+      resultDesc.innerHTML = 'Freeze the lava for 30 seconds.<br>Activate any time in the next game.';
+      Ad.ensureLoaded(); // přednačti už teď
     }else{
       bonusBtn.classList.add('hidden');
       resultTitle.textContent='No winner';
       resultDesc.textContent=`Moves: ${movesCount}`;
     }
-  }, 2000); // show popup after 2s
+  }, 2000);
 }
 
 /* ===== Bot ===== */
@@ -654,10 +775,14 @@ function aiMove(){
 
   const idx=move.y*SIZE+move.x;
   const el=boardEl.querySelectorAll('.cell')[idx];
-  el.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.25)',opacity:.8},{transform:'scale(1)',opacity:1}],{duration:300,easing:'ease-out'});
+  el.animate(
+    [{transform:'scale(1)',opacity:1},
+     {transform:'scale(1.25)',opacity:.8},
+     {transform:'scale(1)',opacity:1}],
+    {duration:300,easing:'ease-out'}
+  );
 
   if(checkWin(AI)){ endGame(false); return; }
-
   if(isStalemate()){ endStalemate(); return; }
 }
 
@@ -666,9 +791,10 @@ function pickBestMove(){
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){
     if(grid[y][x]!==0)continue;
     const aiLen=projectedLineLen(x,y,AI),plLen=projectedLineLen(x,y,PLAYER);
-    const centerBonus=-(Math.abs((SIZE-1)/2-x)+Math.abs((SIZE-1)/2-y))*0.03;
-    const dangerPenalty=(previewThisGame&&nextFall&&nextFall.x===x&&nextFall.y===y&&turnsUntilShrink<=1)?-5:0;
-    const score=aiLen*2.2+plLen*2.0+centerBonus+dangerPenalty;
+    const dist = Math.abs((SIZE-1)/2-x)+Math.abs((SIZE-1)/2-y);
+    const centerBonus=-(dist*aiParams.center);
+    const dangerPenalty=(previewThisGame&&nextFall&&nextFall.x===x&&nextFall.y===y&&turnsUntilShrink<=1)?aiParams.danger:0;
+    const score=aiLen*aiParams.wAI + plLen*aiParams.wPL + centerBonus + dangerPenalty;
     if(score>bestScore){bestScore=score;best={x,y};}
   }
   return best;
@@ -686,8 +812,9 @@ function projectedLineLen(x,y,who){
 /* ===== Boot ===== */
 setupBoardGrid();
 resizeBoardPixelPerfect();
-startGame();
 startLavaFlares();
+showStartOverlay();
+Ad.ensureLoaded(); // prvotní preload
 </script>
 </body>
 </html>
